@@ -9,18 +9,18 @@ import SwiftUI
 import AppKit
 
 extension Color {
-    static let blackApp = NSColor.adaptiveColor(lightHex: "#090A0C", darkHex: "#090A0C")
-    static let grayApp = NSColor.adaptiveColor(lightHex: "#18191B", darkHex: "#18191B")
-    static let lightGrayApp = NSColor.adaptiveColor(lightHex: "#2C2C2E", darkHex: "#2C2C2E")
-    static let mainTextApp = NSColor.white
-    static let secondaryTextApp = NSColor.white.withAlphaComponent(0.8)
-    static let blueAccent = NSColor.adaptiveColor(lightHex: "#007AFF", darkHex: "#007AFF")
-    static let greenAccent = NSColor.adaptiveColor(lightHex: "#34C759", darkHex: "#34C759")
-    static let redAccent = NSColor.adaptiveColor(lightHex: "#FF3B30", darkHex: "#FF3B30")
-    static let orangeAccent = NSColor.adaptiveColor(lightHex: "#FF9500", darkHex: "#FF9500")
-    static let yellowAccent = NSColor.adaptiveColor(lightHex: "#FFCC00", darkHex: "#FFCC00")
-    static let cardBackgroundApp = NSColor.adaptiveColor(lightHex: "#1C1C1E", darkHex: "#1C1C1E")
-    static let borderApp = NSColor.adaptiveColor(lightHex: "#2C2C2E", darkHex: "#2C2C2E")
+    static let blackApp = Color(nsColor: NSColor.adaptiveColor(lightHex: "#090A0C", darkHex: "#090A0C"))
+    static let grayApp = Color(nsColor: NSColor.adaptiveColor(lightHex: "#1E1E1E", darkHex: "#1E1E1E"))
+    static let lightGrayApp = Color(nsColor: NSColor.adaptiveColor(lightHex: "#2C2C2E", darkHex: "#2C2C2E"))
+    static let mainTextApp = Color(nsColor: NSColor.white)
+    static let secondaryTextApp = Color(nsColor: NSColor.white.withAlphaComponent(0.8))
+    static let blueAccent = Color(nsColor: NSColor.adaptiveColor(lightHex: "#007AFF", darkHex: "#007AFF"))
+    static let greenAccent = Color(nsColor: NSColor.adaptiveColor(lightHex: "#34C759", darkHex: "#34C759"))
+    static let redAccent = Color(nsColor: NSColor.adaptiveColor(lightHex: "#FF3B30", darkHex: "#FF3B30"))
+    static let orangeAccent = Color(nsColor: NSColor.adaptiveColor(lightHex: "#FF9500", darkHex: "#FF9500"))
+    static let yellowAccent = Color(nsColor: NSColor.adaptiveColor(lightHex: "#FFCC00", darkHex: "#FFCC00"))
+    static let cardBackgroundApp = Color(nsColor: NSColor.adaptiveColor(lightHex: "#1C1C1E", darkHex: "#1C1C1E"))
+    static let borderApp = Color(nsColor: NSColor.adaptiveColor(lightHex: "#2C2C2E", darkHex: "#2C2C2E"))
 }
 
 extension Color {
