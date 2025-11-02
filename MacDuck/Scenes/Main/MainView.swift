@@ -15,44 +15,59 @@ enum Tab: String, Hashable {
 }
 
 struct MainView: View {
-    @State var selectedTab: Tab = .taskManager
-    
+    @State private var selectedTab: Tab = .timeManager
+
     var body: some View {
-        NavigationSplitView {
-            List(selection: $selectedTab) {
-                NavigationLink(value: Tab.taskManager) {
-                    Label(Tab.taskManager.rawValue, systemImage: "checklist")
+        NavigationView {
+            sidebar
+            contentView
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button {
+                    NSApp.keyWindow?.toggleSidebar(nil)
+                } label: {
+                    Image(systemName: "sidebar.left") // красивая иконка
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
                 }
-                
-                NavigationLink(value: Tab.timeManager) {
-                    Label(Tab.timeManager.rawValue, systemImage: "timer")
-                }
-                
-                NavigationLink(value: Tab.quickLauncher) {
-                    Label(Tab.quickLauncher.rawValue, systemImage: "magnifyingglass")
-                }
-                
-                NavigationLink(value: Tab.exchangeBuffer) {
-                    Label(Tab.exchangeBuffer.rawValue, systemImage: "doc.on.clipboard")
-                }
+                .help("Показать/скрыть панель")
             }
-            .navigationSplitViewColumnWidth(min: 140, ideal: 160, max: 170)
-            .background(Color.blackApp)
-            .foregroundStyle(Color.mainTextApp)
-        } detail: {
-            Group {
-                switch selectedTab {
-                case .taskManager:
-                    TaskManagerView()
-                case .timeManager:
-                    TimeManagerView()
-                case .quickLauncher:
-                    QuickLauncherView()
-                case .exchangeBuffer:
-                    ExchangeBufferView()
-                }
-            }
-            .navigationTitle(selectedTab.rawValue)
+        }
+        .frame(minWidth: 900, minHeight: 560)
+        .background(Color.blackApp)
+    }
+
+    private var sidebar: some View {
+        List(selection: $selectedTab) {
+            Label(Tab.taskManager.rawValue, systemImage: "checklist")
+                .tag(Tab.taskManager)
+            Label(Tab.timeManager.rawValue, systemImage: "timer")
+                .tag(Tab.timeManager)
+            Label(Tab.quickLauncher.rawValue, systemImage: "magnifyingglass")
+                .tag(Tab.quickLauncher)
+            Label(Tab.exchangeBuffer.rawValue, systemImage: "doc.on.doc")
+                .tag(Tab.exchangeBuffer)
+        }
+        .listStyle(SidebarListStyle())
+        .frame(minWidth: 220)
+    }
+
+    @ViewBuilder
+    private var contentView: some View {
+        switch selectedTab {
+        case .taskManager:
+            TaskManagerView()
+                .navigationTitle(Tab.taskManager.rawValue)
+        case .timeManager:
+            TimeManagerView()
+                .navigationTitle(Tab.timeManager.rawValue)
+        case .quickLauncher:
+            QuickLauncherView()
+                .navigationTitle(Tab.quickLauncher.rawValue)
+        case .exchangeBuffer:
+            ExchangeBufferView()
+                .navigationTitle(Tab.exchangeBuffer.rawValue)
         }
     }
 }
@@ -61,12 +76,6 @@ struct MainView: View {
 struct TaskManagerView: View {
     var body: some View {
         Text(Tab.taskManager.rawValue)
-    }
-}
-
-struct TimeManagerView: View {
-    var body: some View {
-        Text(Tab.timeManager.rawValue)
     }
 }
 
