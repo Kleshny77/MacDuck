@@ -7,17 +7,22 @@
 
 import Foundation
 import Combine
+import AppKit
 
 final class PomodoroService: ObservableObject {
+    
+    static let shared = PomodoroService()
 
     @Published private(set) var state: RunningPomodoroState?
 
-    private let dnd = DNDService()
     private let stats = StatsStorage()
 
     private var timer: AnyCancellable?
 
     func start(taskID: UUID?, taskTitle: String?, duration: TimeInterval) {
+        // Включаем фокус перед стартом сессии
+        ShortcutRunner.focusOn()
+
         // Если что-то уже идет — сначала останавливаем
         stop(save: false)
 
@@ -29,9 +34,6 @@ final class PomodoroService: ObservableObject {
             startedAt: Date(),
             isPaused: false
         )
-
-        // Включаем DND
-        dnd.setEnabled(true)
 
         // Запускаем раз в секунду
         timer = Timer.publish(every: 1, on: .main, in: .common)
@@ -62,13 +64,13 @@ final class PomodoroService: ObservableObject {
 
     // Полная остановка
     func stop(save: Bool = true) {
+        // Выключаем фокус при остановке вручную
+        ShortcutRunner.focusOff()
+
         timer?.cancel()
         timer = nil
 
         defer { state = nil }
-
-        // Выключаем DND
-        dnd.setEnabled(false)
 
         guard save, let s = state else { return }
         // Записываем завершенную сессию в статистику
@@ -91,6 +93,9 @@ final class PomodoroService: ObservableObject {
         state = s
 
         if s.remaining <= 0 {
+            // Снимаем фокус при завершении таймера
+            ShortcutRunner.focusOff()
+
             // Автостоп и запись статистики
             stop(save: true)
         }

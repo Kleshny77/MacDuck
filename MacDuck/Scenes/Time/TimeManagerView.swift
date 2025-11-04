@@ -9,10 +9,16 @@ import SwiftUI
 
 struct TimeManagerView: View {
 
-    @StateObject private var service = PomodoroService()
+    @ObservedObject private var service = PomodoroService.shared
 
     @State private var taskTitle: String = ""
     @State private var selectedMinutes: Int = 25
+    
+    @State private var showingFocusOnAlert = false
+    @State private var showingFocusOffAlert = false
+    
+    @AppStorage("focusOnConfigured") private var focusOnConfigured = false
+    @AppStorage("focusOffConfigured") private var focusOffConfigured = false
 
     @State private var showCustomTimeSheet = false
     @State private var customMinutesInput: String = ""
@@ -20,7 +26,7 @@ struct TimeManagerView: View {
     private let presets = [15, 25, 45]
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 16) {
             headerSection()
 
             timerSection()
@@ -29,14 +35,38 @@ struct TimeManagerView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
             controlsSection()
-
+            
             statsSection()
+                .frame(maxWidth: .infinity)
+            
+            focusSetupSection()
         }
         .padding(20)
         .background(Color.blackApp)
         .navigationTitle(Tab.timeManager.rawValue)
         .sheet(isPresented: $showCustomTimeSheet) {
             customTimeInputSheet()
+        }
+        .alert("Настройка включения фокусирования",
+               isPresented: $showingFocusOnAlert) {
+            Button("Открыть Команды") {
+                ShortcutCreator.createShortcutForFocusOn()
+                focusOnConfigured = true
+            }
+            Button("Отмена", role: .cancel) { }
+        } message: {
+            focusOnAlertMessage()
+        }
+
+        .alert("Настройка отключения фокусирования",
+               isPresented: $showingFocusOffAlert) {
+            Button("Открыть Команды") {
+                ShortcutCreator.createShortcutForFocusOff()
+                focusOffConfigured = true
+            }
+            Button("Отмена", role: .cancel) { }
+        } message: {
+            focusOffAlertMessage()
         }
     }
 
@@ -80,10 +110,11 @@ struct TimeManagerView: View {
     private func segmentButton(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(label)
-                .font(Font.custom("HSESans-Regular", size: 12))
+                .font(Font.custom("HSESans-Regular", size: 14))
                 .foregroundColor(isSelected ? .white : .secondaryTextApp)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(isSelected ? Color.grayApp : Color.clear)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -117,12 +148,12 @@ struct TimeManagerView: View {
                 Button(service.isPaused() ? "Продолжить" : "Пауза") {
                     service.togglePause()
                 }
-                .applyPrimaryButton()
+                .applySecondaryButton()
 
                 Button("Стоп") {
                     service.stop()
                 }
-                .applySecondaryButton()
+                .applyPrimaryButton()
 
             } else {
                 Button("Старт") {
@@ -162,6 +193,48 @@ struct TimeManagerView: View {
         .frame(width: 150, alignment: .leading)
         .background(Color.lightGrayApp)
         .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+    
+    private func focusSetupSection() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+
+            Text("Режим фокусирования")
+                .font(Font.custom("HSESans-SemiBold", size: 14))
+                .foregroundColor(.secondaryTextApp)
+                .padding(.top, 12)
+
+            if !focusOnConfigured || !focusOffConfigured {
+                // Вид для первоначальной настройки
+                HStack(spacing: 12) {
+                    Button("Настроить включение") {
+                        showingFocusOnAlert = true
+                        focusOnConfigured = true
+                    }
+                    .applyPrimaryButton()
+
+                    Button("Настроить отключение") {
+                        showingFocusOffAlert = true
+                        focusOffConfigured = true
+                    }
+                    .applyPrimaryButton()
+                }
+
+                Text("Нужно настроить один раз, чтобы фокус включался и выключался автоматически.")
+                    .font(Font.custom("HSESans-Regular", size: 12))
+                    .foregroundColor(.secondaryTextApp)
+                    .padding(.top, 4)
+
+            } else {
+                // Компактный режим после настройки
+                VStack(alignment: .leading, spacing: 6) {
+                    Button("Перенастроить") {
+                        focusOnConfigured = false
+                        focusOffConfigured = false
+                    }
+                    .applySecondaryButton()
+                }
+            }
+        }
     }
 
     // MARK: Custom Time Sheet
@@ -204,6 +277,43 @@ struct TimeManagerView: View {
         let duration = TimeInterval(selectedMinutes * 60)
         service.start(taskID: nil, taskTitle: taskTitle, duration: duration)
     }
+    
+    // MARK: – Focus Setup Alerts Text
+
+    private func focusOnAlertMessage() -> Text {
+        Text("""
+    Сейчас откроется приложение «Команды».
+
+    1) Вставьте название:
+       нажмите ⌘V (название «Pomodoro» уже скопировано).
+
+    2) Найдите и добавьте действие:
+       «Вкл./выкл. фокусирование».
+
+    3) Выберите:
+       «Вкл.» → до «Выключения».
+
+    Затем можете просто закрыть нажмите приложение «Команды».
+    """)
+    }
+
+    private func focusOffAlertMessage() -> Text {
+        Text("""
+    Сейчас откроется приложение «Команды».
+
+    1) Вставьте название:
+       нажмите ⌘V (название «Pomodoro Off» уже скопировано).
+
+    2) Найдите и добавьте действие:
+       «Вкл./выкл. фокусирование».
+
+    3) Выберите:
+       «выключить».
+
+    Затем можете просто закрыть нажмите приложение «Команды».
+    """)
+    }
+
 
     // MARK: Time formatting
 
