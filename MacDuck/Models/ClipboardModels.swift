@@ -2,7 +2,7 @@
 //  ClipboardModels.swift
 //  MacDuck
 //
-//  Created by Codex on 05.11.2025.
+//  Created by Михаил Рычагов on 05.11.2025.
 //
 
 import Foundation
