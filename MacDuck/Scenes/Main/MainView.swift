@@ -179,7 +179,7 @@ struct ExchangeBufferView: View {
                         .font(Font.custom("HSESans-Regular", size: 12))
                         .foregroundColor(.secondaryTextApp)
                 }
-                .padding(14)
+                .padding(EdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 90))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(isHovered ? Color.grayApp : Color.cardBackgroundApp)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
