@@ -92,6 +92,7 @@ struct ExchangeBufferView: View {
     @State private var editingHotkeyItemId: ClipboardItem.ID?
     @State private var pressedPreviewItemId: ClipboardItem.ID?
     @State private var previewWorkItem: DispatchWorkItem?
+    @State private var showingOnboarding = false
 
     private let maxHotkeyIndex = 9
 
@@ -114,6 +115,9 @@ struct ExchangeBufferView: View {
                 }
             )
         }
+        .sheet(isPresented: $showingOnboarding) {
+            ClipboardOnboardingView()
+        }
         .overlay(previewOverlay)
     }
 
@@ -132,15 +136,29 @@ struct ExchangeBufferView: View {
 
                 Spacer()
 
-                if !service.items.isEmpty {
+                HStack(spacing: 10) {
                     Button {
-                        editingHotkeyItemId = nil
-                        service.clearAll()
+                        showingOnboarding = true
                     } label: {
-                        Label("Очистить", systemImage: "trash")
-                            .font(Font.custom("HSESans-Regular", size: 13))
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.secondaryTextApp)
+                            .padding(8)
+                            .background(Color.grayApp.opacity(0.6))
+                            .clipShape(Circle())
                     }
-                    .applySecondaryButton()
+                    .buttonStyle(.plain)
+
+                    if !service.items.isEmpty {
+                        Button {
+                            editingHotkeyItemId = nil
+                            service.clearAll()
+                        } label: {
+                            Label("Очистить", systemImage: "trash")
+                                .font(Font.custom("HSESans-Regular", size: 13))
+                        }
+                        .applySecondaryButton()
+                    }
                 }
             }
         }
