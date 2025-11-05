@@ -88,6 +88,7 @@ struct QuickLauncherView: View {
 struct ExchangeBufferView: View {
     @ObservedObject private var service = ClipboardHistoryService.shared
     @State private var hoveredId: ClipboardItem.ID?
+    @State private var editingHotkeyItemId: ClipboardItem.ID?
 
     private let maxHotkeyIndex = 9
 
@@ -99,6 +100,17 @@ struct ExchangeBufferView: View {
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.blackApp)
+        .sheet(item: hotkeySheetBinding) { item in
+            HotkeyAssignmentView(
+                item: item,
+                onSetHotkey: { hotkey in
+                    service.setHotkey(hotkey, for: item)
+                },
+                onClearHotkey: {
+                    service.setHotkey(nil, for: item)
+                }
+            )
+        }
     }
 
     private var header: some View {
@@ -148,59 +160,57 @@ struct ExchangeBufferView: View {
     @ViewBuilder
     private func row(for item: ClipboardItem, index: Int) -> some View {
         let isHovered = hoveredId == item.id
-        let shortcut = hotkey(for: index)
+        let automaticShortcut = hotkey(for: index)
+        let customShortcut = item.hotkey?.display
 
-        let label = HStack(alignment: .top, spacing: 12) {
-            if let shortcut {
-                Text(shortcut)
-                    .font(Font.custom("HSESans-SemiBold", size: 12))
-                    .foregroundColor(.secondaryTextApp)
-                    .frame(width: 44, alignment: .leading)
-            } else {
-                Spacer()
-                    .frame(width: 44)
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(itemPreview(item))
-                    .font(Font.custom("HSESans-Regular", size: 14))
-                    .foregroundColor(.mainTextApp)
-                    .lineLimit(3)
-                    .multilineTextAlignment(.leading)
-
-                Text(item.capturedAt, style: .time)
-                    .font(Font.custom("HSESans-Regular", size: 12))
-                    .foregroundColor(.secondaryTextApp)
-            }
-
-            Spacer()
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(isHovered ? Color.grayApp : Color.cardBackgroundApp)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-
-        if index < maxHotkeyIndex {
+        ZStack(alignment: .topTrailing) {
             Button {
                 service.paste(item)
             } label: {
-                label
-            }
-            .buttonStyle(.plain)
-            .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command])
-            .onHover { hovering in
-                hoveredId = hovering ? item.id : nil
-            }
-        } else {
-            Button {
-                service.paste(item)
-            } label: {
-                label
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(itemPreview(item))
+                        .font(Font.custom("HSESans-Regular", size: 14))
+                        .foregroundColor(.mainTextApp)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Text(item.capturedAt, style: .time)
+                        .font(Font.custom("HSESans-Regular", size: 12))
+                        .foregroundColor(.secondaryTextApp)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(isHovered ? Color.grayApp : Color.cardBackgroundApp)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
             .buttonStyle(.plain)
             .onHover { hovering in
                 hoveredId = hovering ? item.id : nil
             }
+            .modifier(AutomaticShortcutModifier(index: index, limit: maxHotkeyIndex))
+
+            VStack(alignment: .trailing, spacing: 6) {
+                Button {
+                    editingHotkeyItemId = item.id
+                } label: {
+                    Image(systemName: "keyboard")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.secondaryTextApp)
+                        .padding(8)
+                        .background(Color.grayApp.opacity(isHovered ? 0.9 : 0.6))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+
+                if let customShortcut {
+                    shortcutBadge(customShortcut, isPrimary: true)
+                } else if let automaticShortcut {
+                    shortcutBadge(automaticShortcut, isPrimary: false)
+                }
+            }
+            .padding(.top, 6)
+            .padding(.trailing, 6)
         }
     }
 
@@ -209,12 +219,48 @@ struct ExchangeBufferView: View {
         return "⌘\(index + 1)"
     }
 
+    private func shortcutBadge(_ text: String, isPrimary: Bool) -> some View {
+        Text(text)
+            .font(Font.custom("HSESans-SemiBold", size: 12))
+            .foregroundColor(isPrimary ? .black : .secondaryTextApp)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(isPrimary ? Color.yellowAccent : Color.grayApp.opacity(0.6))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
     private func itemPreview(_ item: ClipboardItem) -> String {
         let preview = item.preview
         if preview.isEmpty {
             return "Пустая строка"
         }
         return preview
+    }
+
+    private var hotkeySheetBinding: Binding<ClipboardItem?> {
+        Binding(
+            get: {
+                guard let id = editingHotkeyItemId else { return nil }
+                return service.items.first(where: { $0.id == id })
+            },
+            set: { newValue in
+                editingHotkeyItemId = newValue?.id
+            }
+        )
+    }
+}
+
+private struct AutomaticShortcutModifier: ViewModifier {
+    let index: Int
+    let limit: Int
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if index < limit {
+            content.keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command])
+        } else {
+            content
+        }
     }
 }
 

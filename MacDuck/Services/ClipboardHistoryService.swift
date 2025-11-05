@@ -17,6 +17,8 @@ final class ClipboardHistoryService: ObservableObject {
     @Published private(set) var items: [ClipboardItem]
 
     private let storage = ClipboardStorage()
+    private let hotkeyCenter = ClipboardHotkeyCenter.shared
+
     private var monitorTimer: Timer?
     private var lastChangeCount: Int
     private let historyLimit = 50
@@ -25,6 +27,7 @@ final class ClipboardHistoryService: ObservableObject {
         let stored = storage.load()
         self.items = stored
         self.lastChangeCount = NSPasteboard.general.changeCount
+        configureHotkeys()
         startMonitoring()
     }
 
@@ -38,6 +41,21 @@ final class ClipboardHistoryService: ObservableObject {
         copyToPasteboard(item.content)
         storage.save(items)
         simulatePasteCommand()
+    }
+
+    func setHotkey(_ hotkey: ClipboardHotkey?, for item: ClipboardItem) {
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+
+        var updatedItems = items
+        updatedItems[index].hotkey = hotkey
+        items = updatedItems
+        storage.save(items)
+
+        if let hotkey {
+            hotkeyCenter.register(hotkey, for: item.id)
+        } else {
+            hotkeyCenter.unregister(itemId: item.id)
+        }
     }
 
     private func startMonitoring() {
@@ -66,9 +84,7 @@ final class ClipboardHistoryService: ObservableObject {
 
         let item = ClipboardItem(content: string)
         items.insert(item, at: 0)
-        if items.count > historyLimit {
-            items = Array(items.prefix(historyLimit))
-        }
+        trimHistoryIfNeeded()
         storage.save(items)
     }
 
@@ -80,16 +96,16 @@ final class ClipboardHistoryService: ObservableObject {
     }
 
     private func promoteOrInsert(_ item: ClipboardItem) {
-        if let index = items.firstIndex(of: item) {
+        if let index = items.firstIndex(where: { $0.id == item.id }) {
             guard index != 0 else { return }
 
-            items.remove(at: index)
-            items.insert(item, at: 0)
+            var current = items
+            let moved = current.remove(at: index)
+            current.insert(moved, at: 0)
+            items = current
         } else {
             items.insert(item, at: 0)
-            if items.count > historyLimit {
-                items = Array(items.prefix(historyLimit))
-            }
+            trimHistoryIfNeeded()
         }
     }
 
@@ -105,5 +121,53 @@ final class ClipboardHistoryService: ObservableObject {
 
         keyDown?.post(tap: .cghidEventTap)
         keyUp?.post(tap: .cghidEventTap)
+    }
+
+    private func configureHotkeys() {
+        hotkeyCenter.setHandlers(onActivate: { [weak self] itemId in
+            DispatchQueue.main.async {
+                self?.handleHotkeyActivation(for: itemId)
+            }
+        }, onReplace: { [weak self] itemId in
+            DispatchQueue.main.async {
+                self?.clearHotkey(for: itemId)
+            }
+        })
+
+        restoreHotkeys()
+    }
+
+    private func restoreHotkeys() {
+        for item in items {
+            guard let hotkey = item.hotkey else { continue }
+            hotkeyCenter.register(hotkey, for: item.id)
+        }
+    }
+
+    private func handleHotkeyActivation(for itemId: UUID) {
+        guard let item = items.first(where: { $0.id == itemId }) else { return }
+        paste(item)
+    }
+
+    private func clearHotkey(for itemId: UUID) {
+        guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
+
+        var updatedItems = items
+        updatedItems[index].hotkey = nil
+        items = updatedItems
+        storage.save(items)
+    }
+
+    private func trimHistoryIfNeeded() {
+        guard items.count > historyLimit else { return }
+
+        let preserved = Array(items.prefix(historyLimit))
+        let removed = items.dropFirst(historyLimit)
+
+        for item in removed {
+            hotkeyCenter.unregister(itemId: item.id)
+        }
+
+        items = preserved
     }
 }
