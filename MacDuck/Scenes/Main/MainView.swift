@@ -309,14 +309,14 @@ struct ExchangeBufferView: View {
     }
 
     private func leadingIcon(for item: ClipboardItem) -> String? {
-        if item.primaryString != nil {
-            return "doc.text"
-        }
         if item.allRepresentations.contains(where: { $0.isImage }) {
             return "photo"
         }
         if item.allRepresentations.contains(where: { $0.fileURL != nil }) {
-            return "folder"
+            return "doc"
+        }
+        if item.primaryString != nil {
+            return "text.alignleft"
         }
         return "rectangle.and.paperclip"
     }
