@@ -20,7 +20,7 @@ struct ClipboardOnboardingView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     sectionTitle("Основные действия")
                     onboardingItem(icon: "cursorarrow.rays", title: "Вставка по клику", description: "Нажмите на любую запись, чтобы сразу вставить её содержимое в активное поле.")
-                    onboardingItem(icon: "command.square", title: "Горячие клавиши", description: "Первые девять элементов можно вставлять сочетаниями ⌘1…⌘9. Нажмите на иконку клавиатуры, чтобы задать собственное сочетание.")
+                    onboardingItem(icon: "command.square", title: "Горячие клавиши", description: "Назначайте свои сочетания для любых записей через иконку клавиатуры. После назначения комбинация работает в любом приложении.")
                     onboardingItem(icon: "trash", title: "Удаление записи", description: "Иконка корзины рядом с записью удаляет её из истории. Кнопка «Очистить» в правом верхнем углу очищает весь список.")
 
                     sectionTitle("Работа с изображениями")

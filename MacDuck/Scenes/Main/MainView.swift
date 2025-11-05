@@ -200,7 +200,6 @@ struct ExchangeBufferView: View {
     @ViewBuilder
     private func row(for item: ClipboardItem, index: Int) -> some View {
         let isHovered = hoveredId == item.id
-        let automaticShortcut = hotkey(for: index)
         let customShortcut = item.hotkey?.display
 
         ZStack(alignment: .topTrailing) {
@@ -268,7 +267,6 @@ struct ExchangeBufferView: View {
                     }
                 }
             }, perform: { })
-            .modifier(AutomaticShortcutModifier(index: index, limit: maxHotkeyIndex))
 
             VStack(alignment: .trailing, spacing: 6) {
                 HStack(spacing: 6) {
@@ -302,18 +300,11 @@ struct ExchangeBufferView: View {
 
                 if let customShortcut {
                     shortcutBadge(customShortcut, isPrimary: true)
-                } else if let automaticShortcut {
-                    shortcutBadge(automaticShortcut, isPrimary: false)
                 }
             }
             .padding(.top, 6)
             .padding(.trailing, 6)
         }
-    }
-
-    private func hotkey(for index: Int) -> String? {
-        guard index < maxHotkeyIndex else { return nil }
-        return "⌘\(index + 1)"
     }
 
     private func shortcutBadge(_ text: String, isPrimary: Bool) -> some View {
@@ -434,20 +425,6 @@ struct ExchangeBufferView: View {
                     pressedPreviewItemId = nil
                     skipPasteItemId = nil
                 }
-        }
-    }
-}
-
-private struct AutomaticShortcutModifier: ViewModifier {
-    let index: Int
-    let limit: Int
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if index < limit {
-            content.keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command])
-        } else {
-            content
         }
     }
 }
