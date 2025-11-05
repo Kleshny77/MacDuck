@@ -92,6 +92,7 @@ struct ExchangeBufferView: View {
     @State private var editingHotkeyItemId: ClipboardItem.ID?
     @State private var pressedPreviewItemId: ClipboardItem.ID?
     @State private var previewWorkItem: DispatchWorkItem?
+    @State private var skipPasteItemId: ClipboardItem.ID?
     @State private var showingOnboarding = false
 
     private let maxHotkeyIndex = 9
@@ -204,6 +205,10 @@ struct ExchangeBufferView: View {
 
         ZStack(alignment: .topTrailing) {
             Button {
+                if skipPasteItemId == item.id {
+                    skipPasteItemId = nil
+                    return
+                }
                 service.paste(item)
             } label: {
                 HStack(alignment: .top, spacing: 12) {
@@ -244,6 +249,7 @@ struct ExchangeBufferView: View {
                     previewWorkItem?.cancel()
                     let work = DispatchWorkItem {
                         if pressedPreviewItemId != item.id {
+                            skipPasteItemId = item.id
                             pressedPreviewItemId = item.id
                         }
                     }
@@ -254,6 +260,11 @@ struct ExchangeBufferView: View {
                     previewWorkItem = nil
                     if pressedPreviewItemId == item.id {
                         pressedPreviewItemId = nil
+                    }
+                    DispatchQueue.main.async {
+                        if skipPasteItemId == item.id && pressedPreviewItemId == nil {
+                            skipPasteItemId = nil
+                        }
                     }
                 }
             }, perform: { })
@@ -421,6 +432,7 @@ struct ExchangeBufferView: View {
                 .animation(.easeInOut(duration: 0.15), value: pressedPreviewItemId)
                 .onTapGesture {
                     pressedPreviewItemId = nil
+                    skipPasteItemId = nil
                 }
         }
     }
