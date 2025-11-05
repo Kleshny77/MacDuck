@@ -38,7 +38,7 @@ final class ClipboardHistoryService: ObservableObject {
 
     func paste(_ item: ClipboardItem) {
         promoteOrInsert(item)
-        copyToPasteboard(item.content)
+        writeToPasteboard(item)
         storage.save(items)
         simulatePasteCommand()
     }
@@ -90,24 +90,37 @@ final class ClipboardHistoryService: ObservableObject {
 
         lastChangeCount = pasteboard.changeCount
 
-        guard let string = pasteboard.string(forType: .string) else { return }
-        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard var item = ClipboardItem(pasteboard: pasteboard) else { return }
 
-        if items.first?.content == string {
+        if let text = item.primaryString,
+           text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           item.representations.count == 1 {
             return
         }
 
-        let item = ClipboardItem(content: string)
+        if let first = items.first, first.payloads == item.payloads {
+            return
+        }
+
+        item.hotkey = nil
         items.insert(item, at: 0)
         trimHistoryIfNeeded()
         storage.save(items)
     }
 
-    private func copyToPasteboard(_ text: String) {
+    private func writeToPasteboard(_ item: ClipboardItem) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
+
+        let pbItems = item.payloads.map { payload -> NSPasteboardItem in
+            let pbItem = NSPasteboardItem()
+            payload.representations.forEach { $0.apply(to: pbItem) }
+            return pbItem
+        }
+
+        guard !pbItems.isEmpty else { return }
+
+        pasteboard.writeObjects(pbItems)
         lastChangeCount = pasteboard.changeCount
     }
 

@@ -186,12 +186,26 @@ struct ExchangeBufferView: View {
                 service.paste(item)
             } label: {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(itemPreview(item))
-                        .font(Font.custom("HSESans-Regular", size: 14))
-                        .foregroundColor(.mainTextApp)
-                        .lineLimit(3)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(alignment: .top, spacing: 10) {
+                        if let iconName = leadingIcon(for: item) {
+                            Image(systemName: iconName)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.secondaryTextApp)
+                        }
+
+                        Text(itemPreview(item))
+                            .font(Font.custom("HSESans-Regular", size: 14))
+                            .foregroundColor(.mainTextApp)
+                            .lineLimit(3)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    if let secondary = secondaryDescription(for: item) {
+                        Text(secondary)
+                            .font(Font.custom("HSESans-Regular", size: 12))
+                            .foregroundColor(.secondaryTextApp)
+                    }
 
                     Text(item.capturedAt, style: .time)
                         .font(Font.custom("HSESans-Regular", size: 12))
@@ -270,6 +284,41 @@ struct ExchangeBufferView: View {
             return "Пустая строка"
         }
         return preview
+    }
+
+    private func secondaryDescription(for item: ClipboardItem) -> String? {
+        if item.primaryString != nil { return nil }
+        var seen = Set<String>()
+        var ordered: [String] = []
+
+        for representation in item.allRepresentations {
+            let name = representation.displayName
+            if seen.insert(name).inserted {
+                ordered.append(name)
+            }
+        }
+
+        guard !ordered.isEmpty else { return nil }
+
+        if ordered.count > 3 {
+            let head = ordered.prefix(3).joined(separator: ", ")
+            return "\(head) + ещё \(ordered.count - 3)"
+        } else {
+            return ordered.joined(separator: ", ")
+        }
+    }
+
+    private func leadingIcon(for item: ClipboardItem) -> String? {
+        if item.primaryString != nil {
+            return "doc.text"
+        }
+        if item.allRepresentations.contains(where: { $0.isImage }) {
+            return "photo"
+        }
+        if item.allRepresentations.contains(where: { $0.fileURL != nil }) {
+            return "folder"
+        }
+        return "rectangle.and.paperclip"
     }
 
     private var hotkeySheetBinding: Binding<ClipboardItem?> {
