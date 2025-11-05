@@ -58,6 +58,22 @@ final class ClipboardHistoryService: ObservableObject {
         }
     }
 
+    func remove(_ item: ClipboardItem) {
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+        hotkeyCenter.unregister(itemId: item.id)
+        items.remove(at: index)
+        storage.save(items)
+    }
+
+    func clearAll() {
+        for item in items {
+            hotkeyCenter.unregister(itemId: item.id)
+        }
+
+        items.removeAll()
+        storage.save(items)
+    }
+
     private func startMonitoring() {
         monitorTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in
             self?.pollPasteboard()

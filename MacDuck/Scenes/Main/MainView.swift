@@ -31,6 +31,7 @@ struct MainView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white)
                 }
+                .padding(.bottom, 4)
                 .help("Показать/скрыть панель")
             }
         }
@@ -114,14 +115,31 @@ struct ExchangeBufferView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("История буфера обмена")
-                .font(Font.custom("HSESans-Bold", size: 22))
-                .foregroundColor(.mainTextApp)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("История буфера обмена")
+                        .font(Font.custom("HSESans-Bold", size: 22))
+                        .foregroundColor(.mainTextApp)
 
-            Text("Выберите запись или нажмите сочетание клавиш, чтобы вставить содержимое в активное окно.")
-                .font(Font.custom("HSESans-Regular", size: 13))
-                .foregroundColor(.secondaryTextApp)
+                    Text("Выберите запись или нажмите сочетание клавиш, чтобы вставить содержимое в активное окно.")
+                        .font(Font.custom("HSESans-Regular", size: 13))
+                        .foregroundColor(.secondaryTextApp)
+                }
+
+                Spacer()
+
+                if !service.items.isEmpty {
+                    Button {
+                        editingHotkeyItemId = nil
+                        service.clearAll()
+                    } label: {
+                        Label("Очистить", systemImage: "trash")
+                            .font(Font.custom("HSESans-Regular", size: 13))
+                    }
+                    .applySecondaryButton()
+                }
+            }
         }
     }
 
@@ -179,7 +197,7 @@ struct ExchangeBufferView: View {
                         .font(Font.custom("HSESans-Regular", size: 12))
                         .foregroundColor(.secondaryTextApp)
                 }
-                .padding(EdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 90))
+                .padding(EdgeInsets(top: 14, leading: 14, bottom: 20, trailing: 90))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(isHovered ? Color.grayApp : Color.cardBackgroundApp)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -191,17 +209,34 @@ struct ExchangeBufferView: View {
             .modifier(AutomaticShortcutModifier(index: index, limit: maxHotkeyIndex))
 
             VStack(alignment: .trailing, spacing: 6) {
-                Button {
-                    editingHotkeyItemId = item.id
-                } label: {
-                    Image(systemName: "keyboard")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.secondaryTextApp)
-                        .padding(8)
-                        .background(Color.grayApp.opacity(isHovered ? 0.9 : 0.6))
-                        .clipShape(Circle())
+                HStack(spacing: 6) {
+                    Button {
+                        editingHotkeyItemId = item.id
+                    } label: {
+                        Image(systemName: "keyboard")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.secondaryTextApp)
+                            .padding(8)
+                            .background(Color.grayApp.opacity(isHovered ? 0.9 : 0.6))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        if editingHotkeyItemId == item.id {
+                            editingHotkeyItemId = nil
+                        }
+                        service.remove(item)
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.secondaryTextApp)
+                            .padding(8)
+                            .background(Color.grayApp.opacity(isHovered ? 0.9 : 0.6))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
 
                 if let customShortcut {
                     shortcutBadge(customShortcut, isPrimary: true)
