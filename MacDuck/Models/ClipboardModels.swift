@@ -88,6 +88,10 @@ struct ClipboardItem: Identifiable, Codable, Equatable {
     var allRepresentations: [ClipboardRepresentation] {
         payloads.flatMap { $0.representations }
     }
+
+    var previewImage: NSImage? {
+        allRepresentations.first(where: { $0.isImage })?.imageValue
+    }
 }
 
 struct ClipboardHotkey: Codable, Equatable {

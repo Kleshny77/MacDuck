@@ -90,6 +90,8 @@ struct ExchangeBufferView: View {
     @ObservedObject private var service = ClipboardHistoryService.shared
     @State private var hoveredId: ClipboardItem.ID?
     @State private var editingHotkeyItemId: ClipboardItem.ID?
+    @State private var pressedPreviewItemId: ClipboardItem.ID?
+    @State private var previewWorkItem: DispatchWorkItem?
 
     private let maxHotkeyIndex = 9
 
@@ -112,6 +114,7 @@ struct ExchangeBufferView: View {
                 }
             )
         }
+        .overlay(previewOverlay)
     }
 
     private var header: some View {
@@ -185,31 +188,27 @@ struct ExchangeBufferView: View {
             Button {
                 service.paste(item)
             } label: {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .top, spacing: 10) {
-                        if let iconName = leadingIcon(for: item) {
-                            Image(systemName: iconName)
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.secondaryTextApp)
-                        }
+                HStack(alignment: .top, spacing: 12) {
+                    leadingContent(for: item)
 
+                    VStack(alignment: .leading, spacing: 8) {
                         Text(itemPreview(item))
                             .font(Font.custom("HSESans-Regular", size: 14))
                             .foregroundColor(.mainTextApp)
                             .lineLimit(3)
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                    }
 
-                    if let secondary = secondaryDescription(for: item) {
-                        Text(secondary)
+                        if let secondary = secondaryDescription(for: item) {
+                            Text(secondary)
+                                .font(Font.custom("HSESans-Regular", size: 12))
+                                .foregroundColor(.secondaryTextApp)
+                        }
+
+                        Text(item.capturedAt, style: .time)
                             .font(Font.custom("HSESans-Regular", size: 12))
                             .foregroundColor(.secondaryTextApp)
                     }
-
-                    Text(item.capturedAt, style: .time)
-                        .font(Font.custom("HSESans-Regular", size: 12))
-                        .foregroundColor(.secondaryTextApp)
                 }
                 .padding(EdgeInsets(top: 14, leading: 14, bottom: 20, trailing: 90))
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -220,6 +219,26 @@ struct ExchangeBufferView: View {
             .onHover { hovering in
                 hoveredId = hovering ? item.id : nil
             }
+            .onLongPressGesture(minimumDuration: 0.01, maximumDistance: 10, pressing: { pressing in
+                guard item.previewImage != nil else { return }
+
+                if pressing {
+                    previewWorkItem?.cancel()
+                    let work = DispatchWorkItem {
+                        if pressedPreviewItemId != item.id {
+                            pressedPreviewItemId = item.id
+                        }
+                    }
+                    previewWorkItem = work
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7, execute: work)
+                } else {
+                    previewWorkItem?.cancel()
+                    previewWorkItem = nil
+                    if pressedPreviewItemId == item.id {
+                        pressedPreviewItemId = nil
+                    }
+                }
+            }, perform: { })
             .modifier(AutomaticShortcutModifier(index: index, limit: maxHotkeyIndex))
 
             VStack(alignment: .trailing, spacing: 6) {
@@ -331,6 +350,61 @@ struct ExchangeBufferView: View {
                 editingHotkeyItemId = newValue?.id
             }
         )
+    }
+
+    @ViewBuilder
+    private func leadingContent(for item: ClipboardItem) -> some View {
+        if let preview = item.previewImage {
+            Image(nsImage: preview)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 64, height: 64)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.grayApp.opacity(0.6), lineWidth: 1)
+                )
+        } else if let iconName = leadingIcon(for: item) {
+            Image(systemName: iconName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.secondaryTextApp)
+                .frame(width: 36, height: 36)
+                .background(Color.grayApp.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        } else {
+            Spacer()
+                .frame(width: 0)
+        }
+    }
+
+    @ViewBuilder
+    private var previewOverlay: some View {
+        if let id = pressedPreviewItemId,
+           let item = service.items.first(where: { $0.id == id }),
+           let image = item.previewImage {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .overlay(
+                    VStack(spacing: 16) {
+                        Image(nsImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxWidth: 520, maxHeight: 520)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .shadow(radius: 12)
+
+                        Text("Отпустите, чтобы закрыть")
+                            .font(Font.custom("HSESans-Regular", size: 13))
+                            .foregroundColor(.secondaryTextApp)
+                    }
+                    .padding()
+                )
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.15), value: pressedPreviewItemId)
+                .onTapGesture {
+                    pressedPreviewItemId = nil
+                }
+        }
     }
 }
 
