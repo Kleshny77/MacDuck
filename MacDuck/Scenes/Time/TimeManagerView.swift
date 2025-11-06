@@ -10,6 +10,8 @@ import SwiftUI
 struct TimeManagerView: View {
 
     @ObservedObject private var service = PomodoroService.shared
+    @StateObject private var taskVM = TaskManagerViewModel()
+    @State private var selectedTaskID: UUID? = nil
 
     @State private var taskTitle: String = ""
     @State private var selectedMinutes: Int = 25
@@ -77,10 +79,24 @@ struct TimeManagerView: View {
             Text("Фокус-задача")
                 .font(Font.custom("HSESans-SemiBold", size: 14))
                 .foregroundColor(.secondaryTextApp)
-
-            TextField("Название задачи", text: $taskTitle)
-                .textFieldStyle(.roundedBorder)
-                .font(Font.custom("HSESans-Regular", size: 14))
+            
+            Picker("", selection: $selectedTaskID) {
+                Text("Без задачи").tag(UUID?.none)
+                ForEach(taskVM.tasks) { task in
+                    Text(task.title).tag(Optional(task.id))
+                }
+            }
+            .pickerStyle(MenuPickerStyle())
+            .labelsHidden()
+            .onAppear { taskVM.loadTasks() }
+            .onChange(of: selectedTaskID) { oldValue, newValue in
+                if let id = newValue,
+                   let task = taskVM.tasks.first(where: { $0.id == id }),
+                   let est = task.estimatedDuration {
+                    let minutes = max(1, Int(est / 60))
+                    selectedMinutes = minutes
+                }
+            }
 
             Text("Длительность")
                 .font(Font.custom("HSESans-SemiBold", size: 14))
@@ -275,7 +291,8 @@ struct TimeManagerView: View {
 
     private func startTimer() {
         let duration = TimeInterval(selectedMinutes * 60)
-        service.start(taskID: nil, taskTitle: taskTitle, duration: duration)
+        let selectedTask = taskVM.tasks.first(where: { $0.id == selectedTaskID })
+        service.start(taskID: selectedTask?.id, taskTitle: selectedTask?.title, duration: duration)
     }
     
     // MARK: – Focus Setup Alerts Text
