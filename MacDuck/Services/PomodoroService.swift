@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UserNotifications
 import Combine
 import AppKit
 
@@ -98,6 +99,11 @@ final class PomodoroService: ObservableObject {
 
             // Автостоп и запись статистики
             stop(save: true)
+
+            // Даем macOS время выключить режим "Не беспокоить", чтобы уведомление не было заглушено
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.showCompletionNotification()
+            }
         }
     }
 
@@ -122,4 +128,49 @@ final class PomodoroService: ObservableObject {
     // Доступ к статистике
     func totalToday() -> TimeInterval { stats.totalToday() }
     func totalLast7Days() -> TimeInterval { stats.totalLast7Days() }
+    
+    // MARK: – Уведомления
+    
+    private func showCompletionNotification() {
+        // Разрешение на уведомления (однократный запрос)
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            
+            DispatchQueue.main.async {
+                let messages = [
+                    "Время вышло. Сделай паузу ☕️",
+                    "Фокус-сессия завершена 🌿",
+                    "Отличная работа! 🔥",
+                    "Ты справился! 💪 Отдохни немного.",
+                    "Пора немного размяться 🕺",
+                    "Теперь перерыв! Ты это заслужил 😎",
+                    "Молодец, так держать! 🌟",
+                    "Время взглянуть в окно 🌤️",
+                    "Отличная работа, чемпион 🏆",
+                    "Завершено ✅ Теперь немного отдыха.",
+                    "Ты — машина продуктивности 🤖 Сделай перерыв!",
+                    "Сессия закрыта 🎯 Можешь гордиться собой.",
+                    "Помидорчик сварился 🍅 Отдохни!",
+                    "Теперь можно TikTok, но только чуть-чуть 😉",
+                    "Пора зарядиться энергией ⚡️"
+                ]
+                
+                let content = UNMutableNotificationContent()
+                content.title = "Pomodoro завершено"
+                content.body = messages.randomElement() ?? "Сессия завершена"
+                
+                // Звук уведомления
+                content.sound = UNNotificationSound(named: UNNotificationSoundName("Ping"))
+                
+                // Создаём и добавляем уведомление
+                let request = UNNotificationRequest(
+                    identifier: UUID().uuidString,
+                    content: content,
+                    trigger: nil
+                )
+                center.add(request, withCompletionHandler: nil)
+            }
+        }
+    }
 }
