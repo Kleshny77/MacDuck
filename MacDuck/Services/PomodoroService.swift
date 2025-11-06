@@ -16,7 +16,7 @@ final class PomodoroService: ObservableObject {
 
     @Published private(set) var state: RunningPomodoroState?
 
-    private let stats = StatsStorage()
+    private let stats = StatsStorage.shared
 
     private var timer: AnyCancellable?
 
@@ -172,5 +172,10 @@ final class PomodoroService: ObservableObject {
                 center.add(request, withCompletionHandler: nil)
             }
         }
+    }
+    
+    // Возвращает данные по дням недели для графика
+    func dailyStatsLast7Days() -> [TimeInterval] {
+        stats.last7DaysBreakdown()
     }
 }

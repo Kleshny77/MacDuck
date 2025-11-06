@@ -22,6 +22,7 @@ struct TimeManagerView: View {
     @AppStorage("focusOnConfigured") private var focusOnConfigured = false
     @AppStorage("focusOffConfigured") private var focusOffConfigured = false
 
+    @State private var showStatsChart = false
     @State private var showCustomTimeSheet = false
     @State private var customMinutesInput: String = ""
 
@@ -188,9 +189,24 @@ struct TimeManagerView: View {
                 .font(Font.custom("HSESans-SemiBold", size: 14))
                 .foregroundColor(.secondaryTextApp)
 
-            HStack(spacing: 24) {
-                statTile(title: "Сегодня", seconds: service.totalToday())
-                statTile(title: "7 дней", seconds: service.totalLast7Days())
+            VStack(spacing: 12) {
+                HStack(spacing: 24) {
+                    statTile(title: "Сегодня", seconds: service.totalToday())
+                    statTile(title: "7 дней", seconds: service.totalLast7Days())
+                }
+
+                // График за неделю
+                if showStatsChart {
+                    ProductivityChart(data: service.dailyStatsLast7Days())
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .frame(height: 120)
+                        .padding(.top, 8)
+                }
+            }
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    showStatsChart = hovering
+                }
             }
         }
         .padding(.top, 12)
