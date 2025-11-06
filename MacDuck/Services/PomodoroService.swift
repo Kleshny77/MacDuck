@@ -42,6 +42,8 @@ final class PomodoroService: ObservableObject {
             .sink { [weak self] _ in
                 self?.tick()
             }
+        // Показываем мини-окно с таймером
+        FloatingWindowManager.shared.show()
     }
 
     func togglePause() {
@@ -67,6 +69,9 @@ final class PomodoroService: ObservableObject {
     func stop(save: Bool = true) {
         // Выключаем фокус при остановке вручную
         ShortcutRunner.focusOff()
+        
+        // Закрываем мини-окно при ручной остановке
+        FloatingWindowManager.shared.close()
 
         timer?.cancel()
         timer = nil
@@ -99,6 +104,9 @@ final class PomodoroService: ObservableObject {
 
             // Автостоп и запись статистики
             stop(save: true)
+
+            // Закрываем мини-окно с таймером
+            FloatingWindowManager.shared.close()
 
             // Даем macOS время выключить режим "Не беспокоить", чтобы уведомление не было заглушено
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
