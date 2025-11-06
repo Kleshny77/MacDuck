@@ -73,13 +73,6 @@ struct MainView: View {
     }
 }
 
-// Заглушки
-struct TaskManagerView: View {
-    var body: some View {
-        Text(Tab.taskManager.rawValue)
-    }
-}
-
 struct QuickLauncherView: View {
     var body: some View {
         Text(Tab.quickLauncher.rawValue)
