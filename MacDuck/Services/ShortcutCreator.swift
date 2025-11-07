@@ -11,7 +11,7 @@ import AppKit
 enum ShortcutCreator {
 
     static func createShortcutForFocusOn() {
-        copyToClipboard("Pomodoro") // кладём имя
+        copyToClipboard("Pomodoro On") // кладём имя
         openCreateShortcut()
     }
 

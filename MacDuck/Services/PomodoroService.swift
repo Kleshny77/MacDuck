@@ -24,9 +24,6 @@ final class PomodoroService: ObservableObject {
         // Включаем фокус перед стартом сессии
         ShortcutRunner.focusOn()
 
-        // Если что-то уже идет — сначала останавливаем
-        stop(save: false)
-
         state = RunningPomodoroState(
             taskID: taskID,
             taskTitle: taskTitle?.isEmpty == true ? nil : taskTitle,
