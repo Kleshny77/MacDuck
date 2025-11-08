@@ -44,8 +44,12 @@ struct TimeManagerView: View {
             
             focusSetupSection()
         }
-        .padding(20)
-        .background(Color.blackApp)
+        .padding(EdgeInsets(top: 20, leading: 20, bottom: 0, trailing: 20))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            Color.blackApp
+                .ignoresSafeArea()
+        )
         .navigationTitle(Tab.timeManager.rawValue)
         .sheet(isPresented: $showCustomTimeSheet) {
             customTimeInputSheet()
