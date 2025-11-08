@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 enum Tab: String, Hashable {
     case taskManager = "Задачи"
@@ -70,12 +71,6 @@ struct MainView: View {
             ExchangeBufferView()
                 .navigationTitle(Tab.exchangeBuffer.rawValue)
         }
-    }
-}
-
-struct QuickLauncherView: View {
-    var body: some View {
-        Text(Tab.quickLauncher.rawValue)
     }
 }
 
@@ -420,8 +415,4 @@ struct ExchangeBufferView: View {
                 }
         }
     }
-}
-
-#Preview {
-    MainView()
 }
