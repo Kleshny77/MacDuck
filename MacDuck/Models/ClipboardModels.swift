@@ -162,12 +162,14 @@ struct ClipboardRepresentation: Codable, Equatable {
     }
 
     var fileURL: URL? {
-        if let urlString = String(data: payload, encoding: .utf8) {
-            if let encoded = URL(string: urlString) {
-                return encoded
-            } else {
-                return URL(fileURLWithPath: urlString)
-            }
+        // Определяем файл ТОЛЬКО для представлений с типом .fileURL,
+        // иначе текст/изображения могут ошибочно распознаваться как файл.
+        guard pasteboardType == .fileURL else { return nil }
+
+        // На практике пейстборд кладёт либо строку вида file:///..., либо dataRepresentation.
+        if let urlString = String(data: payload, encoding: .utf8),
+           let url = URL(string: urlString) {
+            return url
         }
         return URL(dataRepresentation: payload, relativeTo: nil)
     }
