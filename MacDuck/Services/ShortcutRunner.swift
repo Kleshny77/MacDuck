@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import AppKit
+internal import AppKit
 
 enum ShortcutRunner {
 

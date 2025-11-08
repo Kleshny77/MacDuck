@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import AppKit
+internal import AppKit
 import CoreGraphics
 import Combine
 
@@ -18,6 +18,7 @@ final class ClipboardHistoryService: ObservableObject {
 
     private let storage = ClipboardStorage()
     private let hotkeyCenter = ClipboardHotkeyCenter.shared
+    private let fileStore = ClipboardFileStore.shared
 
     private var monitorTimer: Timer?
     private var lastChangeCount: Int
@@ -63,11 +64,13 @@ final class ClipboardHistoryService: ObservableObject {
         hotkeyCenter.unregister(itemId: item.id)
         items.remove(at: index)
         storage.save(items)
+        fileStore.removeFiles(for: item.id)
     }
 
     func clearAll() {
         for item in items {
             hotkeyCenter.unregister(itemId: item.id)
+            fileStore.removeFiles(for: item.id)
         }
 
         items.removeAll()
@@ -103,6 +106,7 @@ final class ClipboardHistoryService: ObservableObject {
         }
 
         item.hotkey = nil
+        item = fileStore.prepareItem(item)
         items.insert(item, at: 0)
         trimHistoryIfNeeded()
         storage.save(items)
@@ -195,6 +199,7 @@ final class ClipboardHistoryService: ObservableObject {
 
         for item in removed {
             hotkeyCenter.unregister(itemId: item.id)
+            fileStore.removeFiles(for: item.id)
         }
 
         items = preserved

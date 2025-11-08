@@ -5,7 +5,7 @@
 //  Created by Эльвира Матвеенко on 01.11.2025.
 //
 
-import AppKit
+internal import AppKit
 
 extension NSWindow {
     @objc func toggleSidebar(_ sender: Any?) {
