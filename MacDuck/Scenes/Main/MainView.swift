@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 enum Tab: String, Hashable {
     case taskManager = "Задачи"
@@ -37,7 +38,7 @@ struct MainView: View {
                 }
             }
             .navigationSplitViewColumnWidth(min: 140, ideal: 160, max: 170)
-            .background(Color.blackApp)
+            .background(Color(NSColor.windowBackgroundColor))
             .foregroundStyle(Color.mainTextApp)
         } detail: {
             Group {
@@ -47,7 +48,7 @@ struct MainView: View {
                 case .timeManager:
                     TimeManagerView()
                 case .quickLauncher:
-                    QuickLauncherView()
+                    QuickLauncherSettingsView()
                 case .exchangeBuffer:
                     ExchangeBufferView()
                 }
@@ -67,12 +68,6 @@ struct TaskManagerView: View {
 struct TimeManagerView: View {
     var body: some View {
         Text(Tab.timeManager.rawValue)
-    }
-}
-
-struct QuickLauncherView: View {
-    var body: some View {
-        Text(Tab.quickLauncher.rawValue)
     }
 }
 
