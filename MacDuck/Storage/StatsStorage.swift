@@ -8,6 +8,8 @@
 import Foundation
 
 final class StatsStorage {
+    static let shared = StatsStorage()
+    private(set) var sessions: [PomodoroSession] = []
 
     private let defaults = UserDefaults.standard
     private let key = "pomodoro.sessions.v1"
@@ -35,6 +37,7 @@ final class StatsStorage {
         var list = loadAll()
         list.append(session)
         saveAll(list)
+        sessions = list
     }
 
     // Суммарное фокус-время за сегодня
@@ -55,5 +58,27 @@ final class StatsStorage {
         return loadAll()
             .filter { $0.finishedAt >= start && $0.finishedAt < end }
             .reduce(0) { $0 + $1.totalDuration }
+    }
+    
+    // Возвращает количество затраченного времени (в секундах) по дням за последние 7 дней
+    func last7DaysBreakdown() -> [TimeInterval] {
+        let calendar = Calendar.current
+        let sessions = loadAll()
+        
+        var result: [TimeInterval] = []
+        let today = calendar.startOfDay(for: Date())
+        
+        for i in (0..<7).reversed() {
+            guard let day = calendar.date(byAdding: .day, value: -i, to: today),
+                  let nextDay = calendar.date(byAdding: .day, value: 1, to: day)
+            else { continue }
+            
+            let total = sessions
+                .filter { $0.startedAt >= day && $0.startedAt < nextDay }
+                .reduce(0) { $0 + $1.totalDuration }
+            
+            result.append(total)
+        }
+        return result
     }
 }

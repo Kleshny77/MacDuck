@@ -12,15 +12,23 @@ internal import AppKit
 enum ShortcutRunner {
 
     // Имена команд. Пользователь создаёт их вручную в Командах (Shortcuts)
-    static let onName = "Pomodoro"
+    static let onName = "Pomodoro On"
     static let offName = "Pomodoro Off"
 
     // Запуск команды по имени
     static func run(_ name: String) {
-        guard let encoded = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "shortcuts://run-shortcut?name=\(encoded)") else { return }
+        // Кодировка имени для командной строки
+        let process = Process()
+        process.launchPath = "/usr/bin/shortcuts"
+        process.arguments = ["run", name]
 
-        NSWorkspace.shared.open(url)
+        // Перенаправляем вывод, чтобы не мешал интерфейсу
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+
+        // Запуск команды без открытия окна "Команды"
+        process.launch()
     }
 
     static func focusOn()  { run(onName) }

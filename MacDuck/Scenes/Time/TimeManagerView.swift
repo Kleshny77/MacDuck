@@ -10,6 +10,8 @@ import SwiftUI
 struct TimeManagerView: View {
 
     @ObservedObject private var service = PomodoroService.shared
+    @StateObject private var taskVM = TaskManagerViewModel()
+    @State private var selectedTaskID: UUID? = nil
 
     @State private var taskTitle: String = ""
     @State private var selectedMinutes: Int = 25
@@ -20,6 +22,7 @@ struct TimeManagerView: View {
     @AppStorage("focusOnConfigured") private var focusOnConfigured = false
     @AppStorage("focusOffConfigured") private var focusOffConfigured = false
 
+    @State private var showStatsChart = false
     @State private var showCustomTimeSheet = false
     @State private var customMinutesInput: String = ""
 
@@ -77,10 +80,24 @@ struct TimeManagerView: View {
             Text("Фокус-задача")
                 .font(Font.custom("HSESans-SemiBold", size: 14))
                 .foregroundColor(.secondaryTextApp)
-
-            TextField("Название задачи", text: $taskTitle)
-                .textFieldStyle(.roundedBorder)
-                .font(Font.custom("HSESans-Regular", size: 14))
+            
+            Picker("", selection: $selectedTaskID) {
+                Text("Без задачи").tag(UUID?.none)
+                ForEach(taskVM.tasks) { task in
+                    Text(task.title).tag(Optional(task.id))
+                }
+            }
+            .pickerStyle(MenuPickerStyle())
+            .labelsHidden()
+            .onAppear { taskVM.loadTasks() }
+            .onChange(of: selectedTaskID) { oldValue, newValue in
+                if let id = newValue,
+                   let task = taskVM.tasks.first(where: { $0.id == id }),
+                   let est = task.estimatedDuration {
+                    let minutes = max(1, Int(est / 60))
+                    selectedMinutes = minutes
+                }
+            }
 
             Text("Длительность")
                 .font(Font.custom("HSESans-SemiBold", size: 14))
@@ -172,9 +189,24 @@ struct TimeManagerView: View {
                 .font(Font.custom("HSESans-SemiBold", size: 14))
                 .foregroundColor(.secondaryTextApp)
 
-            HStack(spacing: 24) {
-                statTile(title: "Сегодня", seconds: service.totalToday())
-                statTile(title: "7 дней", seconds: service.totalLast7Days())
+            VStack(spacing: 12) {
+                HStack(spacing: 24) {
+                    statTile(title: "Сегодня", seconds: service.totalToday())
+                    statTile(title: "7 дней", seconds: service.totalLast7Days())
+                }
+
+                // График за неделю
+                if showStatsChart {
+                    ProductivityChart(data: service.dailyStatsLast7Days())
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .frame(height: 120)
+                        .padding(.top, 8)
+                }
+            }
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    showStatsChart = hovering
+                }
             }
         }
         .padding(.top, 12)
@@ -275,7 +307,8 @@ struct TimeManagerView: View {
 
     private func startTimer() {
         let duration = TimeInterval(selectedMinutes * 60)
-        service.start(taskID: nil, taskTitle: taskTitle, duration: duration)
+        let selectedTask = taskVM.tasks.first(where: { $0.id == selectedTaskID })
+        service.start(taskID: selectedTask?.id, taskTitle: selectedTask?.title, duration: duration)
     }
     
     // MARK: – Focus Setup Alerts Text
@@ -285,7 +318,7 @@ struct TimeManagerView: View {
     Сейчас откроется приложение «Команды».
 
     1) Вставьте название:
-       нажмите ⌘V (название «Pomodoro» уже скопировано).
+       нажмите ⌘V (название «Pomodoro On» уже скопировано).
 
     2) Найдите и добавьте действие:
        «Вкл./выкл. фокусирование».
