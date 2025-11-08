@@ -7,7 +7,7 @@
 
 import Foundation
 import Combine
-import AppKit
+internal import AppKit
 
 final class PomodoroService: ObservableObject {
     
