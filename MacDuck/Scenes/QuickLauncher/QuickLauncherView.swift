@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AppKit
+internal import AppKit
 
 struct QuickLauncherView: View {
     @StateObject private var viewModel = QuickLauncherViewModel()

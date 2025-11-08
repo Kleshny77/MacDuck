@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AppKit
+internal import AppKit
 
 struct QuickLauncherSettingsView: View {
     @State private var hotkeyEnabled: Bool = true

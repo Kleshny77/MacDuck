@@ -5,7 +5,7 @@
 //  Created by Артём on 26.10.2025.
 //
 
-import AppKit
+internal import AppKit
 import SwiftUI
 
 class QuickLauncherWindow: NSWindow {

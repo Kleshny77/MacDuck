@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import AppKit
+internal import AppKit
 
 class CommandRegistry {
     static let shared = CommandRegistry()
