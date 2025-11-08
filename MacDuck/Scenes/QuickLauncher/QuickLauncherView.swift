@@ -26,7 +26,7 @@ struct QuickLauncherView: View {
                 
                 TextField("Поиск", text: $viewModel.searchText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .regular))
+                    .font(Font.custom(CustomFonts.sansRegular.rawValue, size: 18))
                     .foregroundColor(.mainTextApp)
                     .focused($isSearchFocused)
                     .onSubmit {
@@ -82,7 +82,7 @@ struct QuickLauncherView: View {
                             .font(.system(size: 28))
                             .foregroundColor(.secondaryTextApp)
                         Text("Ничего не найдено")
-                            .font(.system(size: 14))
+                            .font(customFont: .sansRegular, size: 14)
                             .foregroundColor(.secondaryTextApp)
                     }
                     .frame(width: geometry.size.width, height: geometry.size.height)
@@ -228,7 +228,7 @@ struct CategorySection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(customFont: .sansSemiBold, size: 12)
                 .foregroundColor(.secondaryTextApp)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
@@ -271,12 +271,12 @@ struct CommandRowView: View {
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(command.name)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(customFont: .sansSemiBold, size: 15)
                     .foregroundColor(.mainTextApp)
                 
                 if !command.description.isEmpty {
                     Text(command.description)
-                        .font(.system(size: 12))
+                        .font(customFont: .sansRegular, size: 12)
                         .foregroundColor(.secondaryTextApp)
                 }
             }
