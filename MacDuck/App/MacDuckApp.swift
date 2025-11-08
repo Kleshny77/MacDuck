@@ -8,6 +8,7 @@
 import SwiftUI
 import AppKit
 import Carbon
+import ApplicationServices
 
 @main
 struct MacDuckApp: App {
@@ -23,15 +24,21 @@ struct MacDuckApp: App {
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        checkAccessibilityPermissions()
         _ = CommandRegistry.shared
-        registerHotKey()
+        _ = QuickLauncherWindow.shared
+        
+        checkAccessibilityPermissions()
     }
     
     private func checkAccessibilityPermissions() {
-        let accessibilityEnabled = AXIsProcessTrusted()
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        let accessibilityEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
         
-        if !accessibilityEnabled {
+        if accessibilityEnabled {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.registerHotKey()
+            }
+        } else {
             let hasSeenPrompt = UserDefaults.standard.bool(forKey: "hasSeenAccessibilityPrompt")
             
             if !hasSeenPrompt {
@@ -54,6 +61,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     }
                 }
             }
+        }
+    }
+    
+    func applicationDidBecomeActive(_ notification: Notification) {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
+        if AXIsProcessTrustedWithOptions(options as CFDictionary) && !GlobalHotKeyService.shared.isRegistered {
+            registerHotKey()
         }
     }
     

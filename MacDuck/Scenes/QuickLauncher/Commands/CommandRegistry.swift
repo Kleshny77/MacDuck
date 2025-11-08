@@ -16,6 +16,7 @@ class CommandRegistry {
     private init() {
         scanApplications()
         scanFiles()
+        registerAppActions()
     }
     
     func register(_ command: LauncherCommand) {
@@ -258,5 +259,91 @@ class CommandRegistry {
                 scannedFiles += 1
             }
         }
+    }
+    
+    private func registerAppActions() {
+        register(AppActionCommand(
+            id: "app.task.new",
+            name: "Создать новую задачу",
+            keywords: ["task", "задача", "создать", "новая", "добавить", "new", "add"],
+            description: "Открыть форму создания задачи",
+            icon: "plus.square"
+        ) {
+            NotificationCenter.default.post(name: .showAddTask, object: nil)
+        })
+        
+        register(AppActionCommand(
+            id: "app.task.view",
+            name: "Просмотреть задачи",
+            keywords: ["task", "задачи", "список", "tasks", "view"],
+            description: "Перейти к списку задач",
+            icon: "checklist"
+        ) {
+            NotificationCenter.default.post(name: .switchToTab, object: Tab.taskManager)
+        })
+        
+        register(AppActionCommand(
+            id: "app.pomodoro.start.25",
+            name: "Помодоро 25 минут",
+            keywords: ["pomodoro", "помодоро", "таймер", "25", "фокус", "focus"],
+            description: "Запустить таймер на 25 минут",
+            icon: "timer"
+        ) {
+            PomodoroService.shared.start(taskID: nil, taskTitle: nil, duration: 25 * 60)
+            QuickLauncherWindow.shared.hide()
+        })
+        
+        register(AppActionCommand(
+            id: "app.pomodoro.start.15",
+            name: "Помодоро 15 минут",
+            keywords: ["pomodoro", "помодоро", "таймер", "15", "фокус", "короткий"],
+            description: "Запустить таймер на 15 минут",
+            icon: "timer"
+        ) {
+            PomodoroService.shared.start(taskID: nil, taskTitle: nil, duration: 15 * 60)
+            QuickLauncherWindow.shared.hide()
+        })
+        
+        register(AppActionCommand(
+            id: "app.pomodoro.stop",
+            name: "Остановить помодоро",
+            keywords: ["pomodoro", "помодоро", "стоп", "остановить", "stop", "cancel"],
+            description: "Остановить текущий таймер",
+            icon: "stop.circle"
+        ) {
+            PomodoroService.shared.stop(save: true)
+            QuickLauncherWindow.shared.hide()
+        })
+        
+        register(AppActionCommand(
+            id: "app.pomodoro.view",
+            name: "Открыть таймер",
+            keywords: ["pomodoro", "помодоро", "таймер", "время", "time"],
+            description: "Перейти к таймеру помодоро",
+            icon: "clock"
+        ) {
+            NotificationCenter.default.post(name: .switchToTab, object: Tab.timeManager)
+        })
+        
+        register(AppActionCommand(
+            id: "app.clipboard.clear",
+            name: "Очистить буфер обмена",
+            keywords: ["clipboard", "буфер", "очистить", "clear", "удалить"],
+            description: "Удалить всю историю буфера обмена",
+            icon: "trash"
+        ) {
+            ClipboardHistoryService.shared.clearAll()
+            QuickLauncherWindow.shared.hide()
+        })
+        
+        register(AppActionCommand(
+            id: "app.clipboard.view",
+            name: "Открыть буфер обмена",
+            keywords: ["clipboard", "буфер", "история", "copy", "paste"],
+            description: "Перейти к истории буфера обмена",
+            icon: "doc.on.clipboard"
+        ) {
+            NotificationCenter.default.post(name: .switchToTab, object: Tab.exchangeBuffer)
+        })
     }
 }

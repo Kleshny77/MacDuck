@@ -26,6 +26,9 @@ struct TaskManagerView: View {
         .onAppear {
             viewModel.loadTasks()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .showAddTask)) { _ in
+            showingAddTask = true
+        }
     }
     
     private var headerView: some View {
