@@ -20,7 +20,7 @@ struct QuickLauncherSettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Настройки быстрого лаунчера")
-                .font(.system(size: 24, weight: .bold))
+                .font(customFont: .sansBold, size: 24)
                 .foregroundColor(.mainTextApp)
             
             Divider()
@@ -28,11 +28,11 @@ struct QuickLauncherSettingsView: View {
             
             VStack(alignment: .leading, spacing: 12) {
                 Text("Горячая клавиша")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(customFont: .sansSemiBold, size: 18)
                     .foregroundColor(.mainTextApp)
                 
                 Toggle("Включить быстрый лаунчер", isOn: $hotkeyEnabled)
-                    .font(.system(size: 15))
+                    .font(Font.custom(CustomFonts.sansRegular.rawValue, size: 15))
                     .foregroundColor(.mainTextApp)
                     .onChange(of: hotkeyEnabled) { newValue in
                         newValue ? registerHotkey() : unregisterHotkey()
@@ -42,7 +42,7 @@ struct QuickLauncherSettingsView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 12) {
                             Text("Текущая комбинация:")
-                                .font(.system(size: 14))
+                                .font(customFont: .sansRegular, size: 14)
                                 .foregroundColor(.secondaryTextApp)
                             
                             Button(action: { startRecording() }) {
@@ -52,11 +52,11 @@ struct QuickLauncherSettingsView: View {
                                             .foregroundColor(.redAccent)
                                             .font(.system(size: 10))
                                         Text(recordingKeyCode != nil ? KeyboardModifiers.formatKeyCombo(keyCode: recordingKeyCode!, modifiers: recordingModifiers) : "Нажмите комбинацию...")
-                                            .font(.system(size: 14, weight: .medium))
+                                            .font(customFont: .sansSemiBold, size: 14)
                                             .foregroundColor(.mainTextApp)
                                     } else {
                                         Text(KeyboardModifiers.formatKeyCombo(keyCode: UInt16(hotkeyKeyCode), modifiers: KeyboardModifiers.toNSEventModifiers(hotkeyModifiers)))
-                                            .font(.system(size: 14, weight: .medium))
+                                            .font(customFont: .sansSemiBold, size: 14)
                                             .foregroundColor(.mainTextApp)
                                     }
                                 }
@@ -69,15 +69,15 @@ struct QuickLauncherSettingsView: View {
                             
                             if isRecording {
                                 Button("Отмена") { cancelRecording() }
-                                    .font(.system(size: 12))
+                                    .font(customFont: .sansRegular, size: 12)
                                     .foregroundColor(.secondaryTextApp)
                             }
                         }
                         
                         if isRecording {
                             Text("Нажмите новую комбинацию клавиш, затем Enter для сохранения")
-                                .font(.system(size: 12))
-                                .foregroundColor(.orangeAccent)
+                                .font(customFont: .sansRegular, size: 12)
+                                .foregroundColor(.secondaryTextApp)
                         }
                     }
                     .padding(.leading, 20)
@@ -88,6 +88,7 @@ struct QuickLauncherSettingsView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color.blackApp)
         .onAppear {
             hotkeyEnabled = GlobalHotKeyService.shared.isRegistered
             loadHotkeySettings()

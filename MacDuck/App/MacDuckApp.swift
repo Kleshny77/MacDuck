@@ -29,22 +29,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func checkAccessibilityPermissions() {
-        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        let accessibilityEnabled = AXIsProcessTrustedWithOptions(options)
+        let accessibilityEnabled = AXIsProcessTrusted()
         
         if !accessibilityEnabled {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                let alert = NSAlert()
-                alert.messageText = "Требуются разрешения Accessibility"
-                alert.informativeText = "MacDuck нуждается в разрешениях Accessibility для работы глобальных горячих клавиш. Пожалуйста, разрешите доступ в Системных настройках."
-                alert.alertStyle = .warning
-                alert.addButton(withTitle: "Открыть Настройки")
-                alert.addButton(withTitle: "Позже")
-                
-                let response = alert.runModal()
-                if response == .alertFirstButtonReturn {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                        NSWorkspace.shared.open(url)
+            let hasSeenPrompt = UserDefaults.standard.bool(forKey: "hasSeenAccessibilityPrompt")
+            
+            if !hasSeenPrompt {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    let alert = NSAlert()
+                    alert.messageText = "Требуются разрешения Accessibility"
+                    alert.informativeText = "MacDuck нуждается в разрешениях Accessibility для работы глобальных горячих клавиш. Пожалуйста, разрешите доступ в Системных настройках."
+                    alert.alertStyle = .warning
+                    alert.addButton(withTitle: "Открыть Настройки")
+                    alert.addButton(withTitle: "Позже")
+                    
+                    let response = alert.runModal()
+                    
+                    UserDefaults.standard.set(true, forKey: "hasSeenAccessibilityPrompt")
+                    
+                    if response == .alertFirstButtonReturn {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                            NSWorkspace.shared.open(url)
+                        }
                     }
                 }
             }
