@@ -6,7 +6,9 @@
 //
 
 import SwiftUI
-internal import AppKit
+import AppKit
+import ApplicationServices
+
 
 struct QuickLauncherSettingsView: View {
     @State private var hotkeyEnabled: Bool = true
@@ -82,6 +84,51 @@ struct QuickLauncherSettingsView: View {
                     }
                     .padding(.leading, 20)
                 }
+            }
+            
+            Divider()
+                .background(Color.borderApp)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Доступные команды")
+                    .font(customFont: .sansSemiBold, size: 18)
+                    .foregroundColor(.mainTextApp)
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        CommandCategoryView(
+                            icon: "checkmark.square",
+                            title: "Задачи",
+                            commands: [
+                                ("task add <текст>", "Создать новую задачу"),
+                                ("задача создать <текст>", "Создать новую задачу"),
+                                ("task", "Открыть список задач")
+                            ]
+                        )
+                        
+                        CommandCategoryView(
+                            icon: "timer",
+                            title: "Помодоро",
+                            commands: [
+                                ("pomodoro <минуты>", "Запустить таймер (1-180 мин)"),
+                                ("помодоро <минуты>", "Запустить таймер"),
+                                ("pomodoro stop", "Остановить таймер"),
+                                ("помодоро", "Открыть экран таймера")
+                            ]
+                        )
+                        
+                        CommandCategoryView(
+                            icon: "doc.on.clipboard",
+                            title: "Буфер обмена",
+                            commands: [
+                                ("clipboard clear", "Очистить историю"),
+                                ("буфер очистить", "Очистить историю"),
+                                ("clipboard", "Открыть историю буфера")
+                            ]
+                        )
+                    }
+                }
+                .frame(maxHeight: 300)
             }
             
             Spacer()
@@ -173,6 +220,10 @@ struct QuickLauncherSettingsView: View {
     }
     
     private func registerHotkey() {
+        guard AXIsProcessTrusted() else {
+            return
+        }
+        
         GlobalHotKeyService.shared.registerHotKey(
             keyCode: hotkeyKeyCode,
             modifiers: hotkeyModifiers,
@@ -184,5 +235,48 @@ struct QuickLauncherSettingsView: View {
     
     private func unregisterHotkey() {
         GlobalHotKeyService.shared.unregisterHotKey()
+    }
+}
+
+struct CommandCategoryView: View {
+    let icon: String
+    let title: String
+    let commands: [(command: String, description: String)]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundColor(.blueAccent)
+                
+                Text(title)
+                    .font(customFont: .sansSemiBold, size: 15)
+                    .foregroundColor(.mainTextApp)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(commands, id: \.command) { command in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text(command.command)
+                            .font(customFont: .sansRegular, size: 13)
+                            .foregroundColor(.blueAccent)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blueAccent.opacity(0.1))
+                            .cornerRadius(4)
+                        
+                        Text("—")
+                            .font(customFont: .sansRegular, size: 13)
+                            .foregroundColor(.secondaryTextApp)
+                        
+                        Text(command.description)
+                            .font(customFont: .sansRegular, size: 13)
+                            .foregroundColor(.secondaryTextApp)
+                    }
+                }
+            }
+            .padding(.leading, 22)
+        }
     }
 }

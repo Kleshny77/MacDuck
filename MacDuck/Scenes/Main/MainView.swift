@@ -21,6 +21,12 @@ struct MainView: View {
     var body: some View {
         NavigationSplitView {
             List(selection: $selectedTab) {
+                Button(action: {
+                    QuickLauncherWindow.shared.toggle()
+                }) {
+                    Label("🧪 TEST Hotkey", systemImage: "play")
+                }
+                
                 NavigationLink(value: Tab.taskManager) {
                     Label(Tab.taskManager.rawValue, systemImage: "checklist")
                 }
@@ -54,6 +60,12 @@ struct MainView: View {
                 }
             }
             .navigationTitle(selectedTab.rawValue)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .switchToTab)) { notification in
+            if let tab = notification.object as? Tab {
+                selectedTab = tab
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
     }
 }

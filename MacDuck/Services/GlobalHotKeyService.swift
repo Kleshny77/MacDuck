@@ -5,100 +5,113 @@
 //  Created by Артём on 26.10.2025.
 //
 
-internal import AppKit
+import Foundation
+import AppKit
 import Carbon
+import ApplicationServices
 
-class GlobalHotKeyService {
+final class GlobalHotKeyService {
     static let shared = GlobalHotKeyService()
-    
+
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
-    private var hotKeyID: EventHotKeyID = {
-        var signature: FourCharCode = 0
-        "MDHK".utf8.enumerated().forEach { index, byte in
-            signature |= FourCharCode(byte) << (8 * (3 - index))
-        }
-        return EventHotKeyID(signature: signature, id: 1)
-    }()
-    private var hotKeyCallback: (() -> Void)?
-    private var isEnabled: Bool = false
-    
-    var isRegistered: Bool {
-        return isEnabled && hotKeyRef != nil
+    private let hotkeySignature: UInt32 = 0x4D_44_48_4B // "MDHK"
+    private var activationHandler: (() -> Void)?
+    private var currentHotkeyId: UInt32 = 0
+
+    private var nextHotkeyId: UInt32 = 1
+
+    private init() {
+        installEventHandler()
     }
-    
-    private init() {}
-    
+
     func registerHotKey(keyCode: UInt32 = 49, modifiers: UInt32 = 3, callback: @escaping () -> Void) {
         unregisterHotKey()
-        
-        self.hotKeyCallback = callback
-        self.isEnabled = true
-        
-        var eventTypes = [EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))]
-        
-        let eventHandlerCallback: EventHandlerUPP = { (nextHandler, theEvent, userData) -> OSStatus in
-            guard let userData = userData else { return OSStatus(eventNotHandledErr) }
-            
-            var hotKeyID = EventHotKeyID()
-            let status = GetEventParameter(
-                theEvent,
-                EventParamName(kEventParamDirectObject),
-                EventParamType(typeEventHotKeyID),
-                nil,
-                MemoryLayout<EventHotKeyID>.size,
-                nil,
-                &hotKeyID
-            )
-            
-            if status == noErr {
-                let service = Unmanaged<GlobalHotKeyService>.fromOpaque(userData).takeUnretainedValue()
-                DispatchQueue.main.async {
-                    service.hotKeyCallback?()
-                }
-            }
-            
-            return noErr
+
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
+        guard AXIsProcessTrustedWithOptions(options as CFDictionary) else {
+            return
         }
-        
-        InstallEventHandler(
-            GetApplicationEventTarget(),
-            eventHandlerCallback,
-            1,
-            &eventTypes,
-            Unmanaged.passUnretained(self).toOpaque(),
-            &eventHandler
-        )
-        
+
+        activationHandler = callback
+
         var hotKeyRef: EventHotKeyRef?
-        let status = RegisterEventHotKey(
-            UInt32(keyCode),
-            UInt32(modifiers),
-            hotKeyID,
-            GetApplicationEventTarget(),
-            0,
-            &hotKeyRef
-        )
-        
-        if status == noErr {
-            self.hotKeyRef = hotKeyRef
+        currentHotkeyId = nextHotkeyId
+        let hotKeyID = EventHotKeyID(signature: hotkeySignature, id: currentHotkeyId)
+
+        let status = RegisterEventHotKey(keyCode,
+                                         modifiers,
+                                         hotKeyID,
+                                         GetEventDispatcherTarget(),
+                                         0,
+                                         &hotKeyRef)
+
+        guard status == noErr, let hotKeyRef else {
+            return
         }
+
+        self.hotKeyRef = hotKeyRef
+        nextHotkeyId += 1
     }
-    
+
     func unregisterHotKey() {
         if let hotKeyRef = hotKeyRef {
             UnregisterEventHotKey(hotKeyRef)
             self.hotKeyRef = nil
         }
+        activationHandler = nil
+        currentHotkeyId = 0
+    }
+
+    private func installEventHandler() {
+        var eventSpec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
+                                      eventKind: UInt32(kEventHotKeyPressed))
+
+        InstallEventHandler(GetEventDispatcherTarget(),
+                            { (_, event, userData) -> OSStatus in
+                                guard let event = event,
+                                      let userData = userData else { return noErr }
+
+                                let service = Unmanaged<GlobalHotKeyService>.fromOpaque(userData).takeUnretainedValue()
+                                return service.handle(event: event)
+                            },
+                            1,
+                            &eventSpec,
+                            UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()),
+                            &eventHandler)
+    }
+
+    private func handle(event: EventRef) -> OSStatus {
+        var hotKeyID = EventHotKeyID()
+        let status = GetEventParameter(event,
+                                       UInt32(kEventParamDirectObject),
+                                       UInt32(typeEventHotKeyID),
+                                       nil,
+                                       MemoryLayout.size(ofValue: hotKeyID),
+                                       nil,
+                                       &hotKeyID)
+
+        guard status == noErr,
+              hotKeyID.signature == hotkeySignature,
+              hotKeyID.id == currentHotkeyId else {
+            return noErr
+        }
+
+        DispatchQueue.main.async { [weak self] in
+            self?.activationHandler?()
+        }
+        return noErr
+    }
+
+    var isRegistered: Bool {
+        return hotKeyRef != nil
+    }
+
+    deinit {
+        unregisterHotKey()
         if let eventHandler = eventHandler {
             RemoveEventHandler(eventHandler)
             self.eventHandler = nil
         }
-        self.isEnabled = false
-        hotKeyCallback = nil
-    }
-    
-    deinit {
-        unregisterHotKey()
     }
 }
