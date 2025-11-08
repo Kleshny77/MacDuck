@@ -21,12 +21,6 @@ struct MainView: View {
     var body: some View {
         NavigationSplitView {
             List(selection: $selectedTab) {
-                Button(action: {
-                    QuickLauncherWindow.shared.toggle()
-                }) {
-                    Label("🧪 TEST Hotkey", systemImage: "play")
-                }
-                
                 NavigationLink(value: Tab.taskManager) {
                     Label(Tab.taskManager.rawValue, systemImage: "checklist")
                 }
