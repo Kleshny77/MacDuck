@@ -42,10 +42,13 @@ struct ProductivityChart: View {
     
     private func shortDay(for index: Int) -> String {
         let calendar = Calendar.current
-        let day = calendar.date(byAdding: .day, value: index - 6, to: Date())!
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ru_RU")
         formatter.dateFormat = "EE"
+        
+        guard let day = calendar.date(byAdding: .day, value: index - 6, to: Date()) else {
+            return ""
+        }
         return formatter.string(from: day).capitalized
     }
     

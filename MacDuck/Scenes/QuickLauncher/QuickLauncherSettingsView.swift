@@ -53,9 +53,19 @@ struct QuickLauncherSettingsView: View {
                                         Image(systemName: "record.circle.fill")
                                             .foregroundColor(.redAccent)
                                             .font(.system(size: 10))
-                                        Text(recordingKeyCode != nil ? KeyboardModifiers.formatKeyCombo(keyCode: recordingKeyCode!, modifiers: recordingModifiers) : "Нажмите комбинацию...")
+                                        
+                                        if let keyCode = recordingKeyCode {
+                                            Text(KeyboardModifiers.formatKeyCombo(
+                                                keyCode: keyCode,
+                                                modifiers: recordingModifiers
+                                            ))
                                             .font(customFont: .sansSemiBold, size: 14)
                                             .foregroundColor(.mainTextApp)
+                                        } else {
+                                            Text("Нажмите комбинацию...")
+                                                .font(customFont: .sansSemiBold, size: 14)
+                                                .foregroundColor(.mainTextApp)
+                                        }
                                     } else {
                                         Text(KeyboardModifiers.formatKeyCombo(keyCode: UInt16(hotkeyKeyCode), modifiers: KeyboardModifiers.toNSEventModifiers(hotkeyModifiers)))
                                             .font(customFont: .sansSemiBold, size: 14)
