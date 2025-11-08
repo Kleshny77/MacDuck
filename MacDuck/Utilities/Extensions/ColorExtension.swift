@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AppKit
+internal import AppKit
 
 extension Color {
     static let blackApp = Color(nsColor: NSColor.adaptiveColor(lightHex: "#090A0C", darkHex: "#090A0C"))

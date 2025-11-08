@@ -9,6 +9,7 @@ import SwiftUI
 import AppKit
 import ApplicationServices
 
+
 struct QuickLauncherSettingsView: View {
     @State private var hotkeyEnabled: Bool = true
     @State private var hotkeyKeyCode: UInt32 = 49

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AppKit
+internal import AppKit
 
 enum Tab: String, Hashable {
     case taskManager = "Задачи"

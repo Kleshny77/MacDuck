@@ -5,7 +5,7 @@
 //  Created by Assistant on 08.11.2025.
 //
 
-import AppKit
+internal import AppKit
 
 struct KeyboardModifiers {
     static let cmdKey: UInt32 = 0x0100

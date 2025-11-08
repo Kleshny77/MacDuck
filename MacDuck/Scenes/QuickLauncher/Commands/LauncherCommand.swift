@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import AppKit
+internal import AppKit
 
 protocol LauncherCommand {
     var id: String { get }

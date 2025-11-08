@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import AppKit
+internal import AppKit
 import UniformTypeIdentifiers
 
 struct ClipboardItem: Identifiable, Codable, Equatable {
@@ -162,7 +162,15 @@ struct ClipboardRepresentation: Codable, Equatable {
     }
 
     var fileURL: URL? {
+        // Определяем файл ТОЛЬКО для представлений с типом .fileURL,
+        // иначе текст/изображения могут ошибочно распознаваться как файл.
         guard pasteboardType == .fileURL else { return nil }
+
+        // На практике пейстборд кладёт либо строку вида file:///..., либо dataRepresentation.
+        if let urlString = String(data: payload, encoding: .utf8),
+           let url = URL(string: urlString) {
+            return url
+        }
         return URL(dataRepresentation: payload, relativeTo: nil)
     }
 
@@ -179,13 +187,13 @@ extension ClipboardItem {
     init?(pasteboard: NSPasteboard) {
         guard let items = pasteboard.pasteboardItems, !items.isEmpty else { return nil }
 
-        let payloads: [ClipboardPayload] = items.compactMap { item in
-            let representations = item.types.compactMap { type -> ClipboardRepresentation? in
-                guard let data = item.data(forType: type) else { return nil }
+        let payloads: [ClipboardPayload] = items.compactMap { pbItem in
+            let reps: [ClipboardRepresentation] = pbItem.types.compactMap { type in
+                guard let data = pbItem.data(forType: type) else { return nil }
                 if data.count > 5_000_000 { return nil }
                 return ClipboardRepresentation(typeIdentifier: type.rawValue, data: data)
             }
-            return representations.isEmpty ? nil : ClipboardPayload(representations: representations)
+            return reps.isEmpty ? nil : ClipboardPayload(representations: reps)
         }
 
         guard !payloads.isEmpty else { return nil }

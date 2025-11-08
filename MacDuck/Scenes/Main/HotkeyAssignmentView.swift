@@ -7,7 +7,7 @@
 
 import SwiftUI
 import Carbon
-import AppKit
+internal import AppKit
 import QuartzCore
 
 struct HotkeyAssignmentView: View {

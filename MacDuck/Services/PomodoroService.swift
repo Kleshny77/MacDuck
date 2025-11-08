@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import UserNotifications
 import Combine
-import AppKit
+internal import AppKit
 
 final class PomodoroService: ObservableObject {
     
@@ -15,16 +16,13 @@ final class PomodoroService: ObservableObject {
 
     @Published private(set) var state: RunningPomodoroState?
 
-    private let stats = StatsStorage()
+    private let stats = StatsStorage.shared
 
     private var timer: AnyCancellable?
 
     func start(taskID: UUID?, taskTitle: String?, duration: TimeInterval) {
         // Включаем фокус перед стартом сессии
         ShortcutRunner.focusOn()
-
-        // Если что-то уже идет — сначала останавливаем
-        stop(save: false)
 
         state = RunningPomodoroState(
             taskID: taskID,
@@ -41,6 +39,8 @@ final class PomodoroService: ObservableObject {
             .sink { [weak self] _ in
                 self?.tick()
             }
+        // Показываем мини-окно с таймером
+        FloatingWindowManager.shared.show()
     }
 
     func togglePause() {
@@ -66,6 +66,9 @@ final class PomodoroService: ObservableObject {
     func stop(save: Bool = true) {
         // Выключаем фокус при остановке вручную
         ShortcutRunner.focusOff()
+        
+        // Закрываем мини-окно при ручной остановке
+        FloatingWindowManager.shared.close()
 
         timer?.cancel()
         timer = nil
@@ -98,6 +101,14 @@ final class PomodoroService: ObservableObject {
 
             // Автостоп и запись статистики
             stop(save: true)
+
+            // Закрываем мини-окно с таймером
+            FloatingWindowManager.shared.close()
+
+            // Даем macOS время выключить режим "Не беспокоить", чтобы уведомление не было заглушено
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.showCompletionNotification()
+            }
         }
     }
 
@@ -122,4 +133,54 @@ final class PomodoroService: ObservableObject {
     // Доступ к статистике
     func totalToday() -> TimeInterval { stats.totalToday() }
     func totalLast7Days() -> TimeInterval { stats.totalLast7Days() }
+    
+    // MARK: – Уведомления
+    
+    private func showCompletionNotification() {
+        // Разрешение на уведомления (однократный запрос)
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            
+            DispatchQueue.main.async {
+                let messages = [
+                    "Время вышло. Сделай паузу ☕️",
+                    "Фокус-сессия завершена 🌿",
+                    "Отличная работа! 🔥",
+                    "Ты справился! 💪 Отдохни немного.",
+                    "Пора немного размяться 🕺",
+                    "Теперь перерыв! Ты это заслужил 😎",
+                    "Молодец, так держать! 🌟",
+                    "Время взглянуть в окно 🌤️",
+                    "Отличная работа, чемпион 🏆",
+                    "Завершено ✅ Теперь немного отдыха.",
+                    "Ты — машина продуктивности 🤖 Сделай перерыв!",
+                    "Сессия закрыта 🎯 Можешь гордиться собой.",
+                    "Помидорчик сварился 🍅 Отдохни!",
+                    "Теперь можно TikTok, но только чуть-чуть 😉",
+                    "Пора зарядиться энергией ⚡️"
+                ]
+                
+                let content = UNMutableNotificationContent()
+                content.title = "Pomodoro завершено"
+                content.body = messages.randomElement() ?? "Сессия завершена"
+                
+                // Звук уведомления
+                content.sound = UNNotificationSound(named: UNNotificationSoundName("Ping"))
+                
+                // Создаём и добавляем уведомление
+                let request = UNNotificationRequest(
+                    identifier: UUID().uuidString,
+                    content: content,
+                    trigger: nil
+                )
+                center.add(request, withCompletionHandler: nil)
+            }
+        }
+    }
+    
+    // Возвращает данные по дням недели для графика
+    func dailyStatsLast7Days() -> [TimeInterval] {
+        stats.last7DaysBreakdown()
+    }
 }
