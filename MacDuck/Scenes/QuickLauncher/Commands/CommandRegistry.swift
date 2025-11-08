@@ -32,99 +32,78 @@ class CommandRegistry {
             return commands
         }
         
-        // Вычисляем релевантность для каждой команды
         var scoredCommands: [(command: LauncherCommand, score: Double)] = []
         scoredCommands.reserveCapacity(commands.count)
         
         for command in commands {
             let name = command.name.lowercased()
             
-            // Вычисляем релевантность по имени
             var score = calculateRelevance(query: lowerQuery, text: name)
             
-            // Если уже есть точное совпадение, не проверяем keywords
             if score >= 0.95 {
                 scoredCommands.append((command, score))
                 continue
             }
             
-            // Также проверяем ключевые слова
             for keyword in command.keywords {
                 let lowerKeyword = keyword.lowercased()
-                // Пропускаем слишком короткие ключевые слова (согласуем с ApplicationCommand, где создаются keywords > 3)
                 if lowerKeyword.count <= 3 {
                     continue
                 }
                 let kwScore = calculateRelevance(query: lowerQuery, text: lowerKeyword)
-                // Ключевые слова имеют меньший вес
                 score = max(score, kwScore * 0.6)
                 
-                // Ранний выход, если нашли хорошее совпадение
                 if score >= 0.9 {
                     break
                 }
             }
             
-            // Если score слишком низкий, не включаем в результаты
-            // Снижаем порог, чтобы не отфильтровывать релевантные результаты
             if score >= 0.1 {
                 scoredCommands.append((command, score))
             }
         }
         
-        // Сортируем по score (выше = лучше), затем по типу (приложения выше)
         return scoredCommands.sorted { item1, item2 in
             let isApp1 = item1.command is ApplicationCommand
             let isApp2 = item2.command is ApplicationCommand
             
-            // Приложения всегда выше команд при одинаковом score
             if isApp1 != isApp2 {
                 return isApp1
             }
             
-            // Сортируем по score (больше = лучше)
             if abs(item1.score - item2.score) > 0.01 {
                 return item1.score > item2.score
             }
             
-            // При одинаковом score - по алфавиту
             let name1 = item1.command.name.lowercased()
             let name2 = item2.command.name.lowercased()
             return name1.localizedCaseInsensitiveCompare(name2) == .orderedAscending
         }.map { $0.command }
     }
     
-    // Вычисляет релевантность запроса к тексту (0.0 - 1.0)
     private func calculateRelevance(query: String, text: String) -> Double {
         if text.isEmpty || query.isEmpty {
             return 0.0
         }
         
-        // Точное совпадение
         if text == query {
             return 1.0
         }
         
-        // Начинается с запроса
         if text.hasPrefix(query) {
             return 0.95
         }
         
-        // Подстрока в начале слова (после пробела)
         if text.contains(" " + query) {
             return 0.85
         }
         
-        // Подстрока в тексте
         if let range = text.range(of: query) {
             let position = text.distance(from: text.startIndex, to: range.lowerBound)
-            // Чем ближе к началу, тем выше score
             let positionScore = 1.0 - (Double(position) / Double(max(text.count, 1))) * 0.4
             return 0.75 * positionScore
         }
         
-        // Fuzzy match: проверяем, есть ли все символы запроса в тексте в правильном порядке
-        // Но только если запрос длиннее 2 символов
         if query.count < 3 {
             return 0.0
         }
@@ -132,13 +111,10 @@ class CommandRegistry {
         return fuzzyMatch(query: query, text: text)
     }
     
-    // Fuzzy match: проверяет, есть ли все символы запроса в тексте в правильном порядке
-    // Возвращает score от 0.0 до 0.5
     private func fuzzyMatch(query: String, text: String) -> Double {
         let queryChars = Array(query)
         let textChars = Array(text)
         
-        // Проверяем, есть ли все символы запроса в тексте в правильном порядке
         var queryIndex = 0
         var textIndex = 0
         var matchPositions: [Int] = []
@@ -151,36 +127,26 @@ class CommandRegistry {
             textIndex += 1
         }
         
-        // Если не все символы найдены, возвращаем 0
         if queryIndex < queryChars.count {
             return 0.0
         }
-        
-        // Вычисляем score на основе:
-        // 1. Позиция первого совпадения (ближе к началу = лучше)
-        // 2. Количество последовательных совпадений
-        // 3. Общая компактность совпадений
         
         let firstMatch = matchPositions[0]
         let lastMatch = matchPositions[matchPositions.count - 1]
         let span = lastMatch - firstMatch
         
-        // Идеальный случай: все символы подряд
         if span == queryChars.count - 1 {
             let positionScore = firstMatch == 0 ? 1.0 : max(0.0, 1.0 - Double(firstMatch) / Double(textChars.count))
             return 0.5 * positionScore
         }
         
-        // Вычисляем компактность (меньше span = лучше)
         let compactness = Double(queryChars.count) / Double(max(span + 1, 1))
         let positionScore = firstMatch == 0 ? 1.0 : max(0.0, 1.0 - Double(firstMatch) / Double(textChars.count))
         
-        // Если совпадения слишком разбросаны, снижаем score
         if span > queryChars.count * 3 {
             return 0.0
         }
         
-        // Комбинируем факторы
         let score = (compactness * 0.5 + positionScore * 0.5) * 0.4
         
         return score
@@ -207,7 +173,6 @@ class CommandRegistry {
             scanDirectory(url: url, foundBundles: &foundBundles)
         }
         
-        // Сортируем команды по имени
         commands.sort { command1, command2 in
             return command1.name.localizedCaseInsensitiveCompare(command2.name) == .orderedAscending
         }
@@ -221,38 +186,31 @@ class CommandRegistry {
         ) else { return }
         
         for case let fileURL as URL in enumerator {
-            // Проверяем, является ли файл приложением (.app)
             if fileURL.pathExtension == "app" {
-                // Проверяем, что это действительно bundle
                 var isDirectory: ObjCBool = false
                 guard FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory),
                       isDirectory.boolValue else { continue }
                 
-                // Проверяем, что bundle имеет Info.plist
                 let infoPlistPath = fileURL.appendingPathComponent("Contents/Info.plist").path
                 guard FileManager.default.fileExists(atPath: infoPlistPath) else { continue }
                 
-                // Получаем bundle identifier для дедупликации
                 if let bundle = Bundle(url: fileURL),
                    let bundleID = bundle.bundleIdentifier {
                     if foundBundles.contains(bundleID) {
-                        continue // Пропускаем дубликаты
+                        continue
                     }
                     foundBundles.insert(bundleID)
                 }
                 
-                // Создаем команду для приложения
                 let appCommand = ApplicationCommand(bundleURL: fileURL)
                 register(appCommand)
                 
-                // Не сканируем содержимое .app bundle
                 enumerator.skipDescendants()
             }
         }
     }
     
     private func scanFiles() {
-        // Сканируем файлы из домашней директории пользователя
         let homeURL = URL(fileURLWithPath: NSHomeDirectory())
         let commonPaths = [
             homeURL.appendingPathComponent("Documents"),
@@ -261,16 +219,14 @@ class CommandRegistry {
         ]
         
         var scannedFiles = 0
-        let maxFiles = 1000 // Ограничиваем количество файлов для производительности
+        let maxFiles = 1000
         
         for pathURL in commonPaths {
             guard scannedFiles < maxFiles else { break }
             
-            // Проверяем, существует ли директория
             var isDirectory: ObjCBool = false
             guard FileManager.default.fileExists(atPath: pathURL.path, isDirectory: &isDirectory),
                   isDirectory.boolValue else {
-                print("Directory does not exist: \(pathURL.path)")
                 continue
             }
             
@@ -279,36 +235,28 @@ class CommandRegistry {
                 includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey],
                 options: [.skipsHiddenFiles, .skipsPackageDescendants]
             ) else {
-                print("Failed to create enumerator for: \(pathURL.path)")
                 continue
             }
             
             for case let fileURL as URL in enumerator {
                 guard scannedFiles < maxFiles else { break }
                 
-                // Пропускаем директории
                 var isDir: ObjCBool = false
                 guard FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDir),
                       !isDir.boolValue else { continue }
                 
-                // Пропускаем приложения (они уже добавлены)
                 if fileURL.pathExtension == "app" {
                     continue
                 }
                 
-                // Пропускаем системные файлы и скрытые файлы
                 if fileURL.lastPathComponent.hasPrefix(".") {
                     continue
                 }
                 
-                // Создаем команду для файла
                 let fileCommand = FileCommand(fileURL: fileURL)
                 register(fileCommand)
                 scannedFiles += 1
             }
         }
-        
-        print("Scanned \(scannedFiles) files")
     }
 }
-

@@ -58,7 +58,6 @@ struct MainView: View {
     }
 }
 
-// Заглушки
 struct TaskManagerView: View {
     var body: some View {
         Text(Tab.taskManager.rawValue)
@@ -75,8 +74,4 @@ struct ExchangeBufferView: View {
     var body: some View {
         Text(Tab.exchangeBuffer.rawValue)
     }
-}
-
-#Preview {
-    MainView()
 }

@@ -22,41 +22,53 @@ struct MacDuckApp: App {
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Инициализируем CommandRegistry для загрузки команд (это загрузит приложения)
+        checkAccessibilityPermissions()
         _ = CommandRegistry.shared
-        
-        // Регистрируем локальную горячую клавишу
-        // Горячая клавиша будет работать только когда приложение активно
         registerHotKey()
+    }
+    
+    private func checkAccessibilityPermissions() {
+        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        let accessibilityEnabled = AXIsProcessTrustedWithOptions(options)
+        
+        if !accessibilityEnabled {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                let alert = NSAlert()
+                alert.messageText = "Требуются разрешения Accessibility"
+                alert.informativeText = "MacDuck нуждается в разрешениях Accessibility для работы глобальных горячих клавиш. Пожалуйста, разрешите доступ в Системных настройках."
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "Открыть Настройки")
+                alert.addButton(withTitle: "Позже")
+                
+                let response = alert.runModal()
+                if response == .alertFirstButtonReturn {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+            }
+        }
     }
     
     func applicationWillTerminate(_ notification: Notification) {
         GlobalHotKeyService.shared.unregisterHotKey()
     }
     
-    func applicationDidBecomeActive(_ notification: Notification) {
-        // Приложение стало активным - глобальный хоткей уже работает, ничего не делаем
-        // Локальный монитор будет работать автоматически
-    }
-    
     func applicationDidResignActive(_ notification: Notification) {
-        // Приложение потеряло фокус - скрываем лаунчер, но оставляем глобальный хоткей активным
         if QuickLauncherWindow.shared.isVisible {
             QuickLauncherWindow.shared.hide()
         }
     }
     
     func applicationWillHide(_ notification: Notification) {
-        // Приложение скрыто - скрываем лаунчер, но оставляем глобальный хоткей активным
         if QuickLauncherWindow.shared.isVisible {
             QuickLauncherWindow.shared.hide()
         }
     }
     
     private func registerHotKey() {
-        // Загружаем сохраненные настройки или используем значения по умолчанию
-        let keyCode = UserDefaults.standard.object(forKey: "hotkeyKeyCode") as? UInt32 ?? 49 // Space по умолчанию
-        let modifiers = UserDefaults.standard.object(forKey: "hotkeyModifiers") as? UInt32 ?? 3 // Cmd по умолчанию
+        let keyCode = UserDefaults.standard.object(forKey: "hotkeyKeyCode") as? UInt32 ?? 49
+        let modifiers = UserDefaults.standard.object(forKey: "hotkeyModifiers") as? UInt32 ?? 3
         
         GlobalHotKeyService.shared.registerHotKey(
             keyCode: keyCode,

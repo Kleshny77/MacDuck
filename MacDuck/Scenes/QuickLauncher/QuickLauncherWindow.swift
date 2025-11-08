@@ -13,11 +13,10 @@ class QuickLauncherWindow: NSWindow {
     
     private init() {
         let screenRect = NSScreen.main?.frame ?? .zero
-        // Более компактный размер как в старом Spotlight
         let windowSize = NSSize(width: 580, height: 360)
         let windowRect = NSRect(
             x: screenRect.midX - windowSize.width / 2,
-            y: screenRect.midY + 100, // Немного выше центра, как в старом Spotlight
+            y: screenRect.midY + 100,
             width: windowSize.width,
             height: windowSize.height
         )
@@ -61,16 +60,10 @@ class QuickLauncherWindow: NSWindow {
         ])
     }
     
-    override var canBecomeKey: Bool {
-        return true
-    }
-    
-    override var canBecomeMain: Bool {
-        return true
-    }
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
     
     func show() {
-        // Очищаем поиск при открытии - создаем новое представление с очищенным поиском
         let newView = QuickLauncherView()
         let newHostingView = NSHostingView(rootView: newView)
         newHostingView.translatesAutoresizingMaskIntoConstraints = false
@@ -86,7 +79,6 @@ class QuickLauncherWindow: NSWindow {
             newHostingView.bottomAnchor.constraint(equalTo: contentView!.bottomAnchor)
         ])
         
-        // Анимация появления
         alphaValue = 0.0
         makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -97,7 +89,6 @@ class QuickLauncherWindow: NSWindow {
             self.animator().alphaValue = 1.0
         }
         
-        // Устанавливаем фокус на окно и делаем его ключевым
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             self.makeKey()
             self.makeFirstResponder(nil)
@@ -105,7 +96,6 @@ class QuickLauncherWindow: NSWindow {
     }
     
     func hide() {
-        // Анимация исчезновения
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.15
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
@@ -117,11 +107,6 @@ class QuickLauncherWindow: NSWindow {
     }
     
     func toggle() {
-        if isVisible {
-            hide()
-        } else {
-            show()
-        }
+        isVisible ? hide() : show()
     }
 }
-

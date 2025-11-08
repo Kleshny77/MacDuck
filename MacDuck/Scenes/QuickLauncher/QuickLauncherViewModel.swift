@@ -23,7 +23,6 @@ struct GroupedCommands {
 class QuickLauncherViewModel: ObservableObject {
     @Published var searchText: String = "" {
         didSet {
-            // Сохраняем текст при изменении
             UserDefaults.standard.set(searchText, forKey: "quickLauncherLastSearchText")
         }
     }
@@ -36,13 +35,11 @@ class QuickLauncherViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     init() {
-        // Восстанавливаем последний текст поиска
         if let lastText = UserDefaults.standard.string(forKey: lastSearchTextKey) {
             searchText = lastText
             shouldSelectAll = true
         }
         
-        // Инициализируем список всех команд
         let allCommands = commandRegistry.getAllCommands()
         filteredCommands = allCommands
         groupedCommands = groupCommands(allCommands)
@@ -86,4 +83,3 @@ class QuickLauncherViewModel: ObservableObject {
         return grouped
     }
 }
-

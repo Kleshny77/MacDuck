@@ -20,26 +20,21 @@ class ApplicationCommand: LauncherCommand {
     init(bundleURL: URL) {
         self.bundleURL = bundleURL
         
-        // Получаем имя приложения из Info.plist
         if let bundle = Bundle(url: bundleURL),
            let appName = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? 
                          bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String {
             self.name = appName
             self.id = bundle.bundleIdentifier ?? bundleURL.lastPathComponent
         } else {
-            // Используем имя файла без расширения
             let appName = bundleURL.deletingPathExtension().lastPathComponent
             self.name = appName
             self.id = bundleURL.lastPathComponent
         }
         
-        // Ключевые слова для поиска: имя приложения и его части
         var keywordSet: Set<String> = [name.lowercased()]
         let nameParts = name.lowercased().split(separator: " ")
-        // Добавляем только значимые части (длиннее 3 символов, чтобы избежать слишком общих слов)
         keywordSet.formUnion(nameParts.filter { $0.count > 3 }.map { String($0) })
         
-        // Добавляем альтернативные названия популярных приложений
         if let aliases = ApplicationCommand.appAliases[name.lowercased()] {
             keywordSet.formUnion(aliases)
         }
@@ -48,7 +43,6 @@ class ApplicationCommand: LauncherCommand {
         self.description = "Запустить приложение"
         self.icon = "app"
         
-        // Загружаем реальную иконку приложения
         self.appIcon = NSWorkspace.shared.icon(forFile: bundleURL.path)
     }
     
@@ -56,15 +50,10 @@ class ApplicationCommand: LauncherCommand {
         NSWorkspace.shared.openApplication(
             at: bundleURL,
             configuration: NSWorkspace.OpenConfiguration(),
-            completionHandler: { app, error in
-                if let error = error {
-                    print("Failed to launch application: \(error.localizedDescription)")
-                }
-            }
+            completionHandler: nil
         )
     }
     
-    // Альтернативные названия популярных приложений для поиска
     private static let appAliases: [String: [String]] = [
         "safari": ["браузер", "browser", "сафари"],
         "chrome": ["хром", "google chrome", "браузер"],
@@ -91,4 +80,3 @@ class ApplicationCommand: LauncherCommand {
         "system preferences": ["настройки", "settings", "preferences", "системные настройки"]
     ]
 }
-

@@ -18,7 +18,6 @@ struct QuickLauncherView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Search field - более компактный как в старом Spotlight
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondaryTextApp)
@@ -76,7 +75,6 @@ struct QuickLauncherView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             
-            // Results list
             if viewModel.filteredCommands.isEmpty && !viewModel.searchText.isEmpty {
                 GeometryReader { geometry in
                     VStack(spacing: 8) {
@@ -98,11 +96,9 @@ struct QuickLauncherView: View {
                     ScrollViewReader { proxy in
                         ScrollView {
                             LazyVStack(alignment: .leading, spacing: 0) {
-                                // Вычисляем индексы для категорий
                                 let appsCount = viewModel.groupedCommands.applications.count
                                 let filesCount = viewModel.groupedCommands.files.count
                                 
-                                // Приложения
                                 if appsCount > 0 {
                                     CategorySection(
                                         title: CommandCategory.applications.rawValue,
@@ -114,7 +110,6 @@ struct QuickLauncherView: View {
                                     )
                                 }
                                 
-                                // Файлы
                                 if filesCount > 0 {
                                     CategorySection(
                                         title: CommandCategory.files.rawValue,
@@ -143,14 +138,12 @@ struct QuickLauncherView: View {
                 .shadow(color: .black.opacity(0.25), radius: 15, x: 0, y: 8)
         )
         .onAppear {
-            // Устанавливаем фокус на поле поиска с небольшой задержкой
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 isSearchFocused = true
             }
             selectedIndex = 0
         }
         .onChange(of: isSearchFocused) { focused in
-            // Выделяем весь текст при получении фокуса, если нужно
             if focused && viewModel.shouldSelectAll {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     selectAllText()
@@ -185,7 +178,6 @@ struct QuickLauncherView: View {
     }
     
     private func selectAllText() {
-        // Находим NSTextField в иерархии view и выделяем весь текст
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             if let window = NSApplication.shared.keyWindow as? QuickLauncherWindow,
                let contentView = window.contentView {
@@ -195,7 +187,6 @@ struct QuickLauncherView: View {
     }
     
     private func findAndSelectTextField(in view: NSView) {
-        // Проверяем, является ли view NSTextField
         if let textField = view as? NSTextField {
             if textField.isEditable {
                 textField.selectText(nil)
@@ -203,24 +194,20 @@ struct QuickLauncherView: View {
             }
         }
         
-        // Рекурсивно ищем в подвью
         for subview in view.subviews {
             findAndSelectTextField(in: subview)
         }
     }
     
     private func handleItemTap(at index: Int, command: LauncherCommand) {
-        // Если это второй тап на том же элементе - выполняем команду
         if lastTappedIndex == index {
             viewModel.executeCommand(command)
             QuickLauncherWindow.shared.hide()
             lastTappedIndex = nil
         } else {
-            // Первый тап - выбираем элемент (без прокрутки, только подсветка)
             selectedIndex = index
             lastTappedIndex = index
             
-            // Сбрасываем выбор через некоторое время, если не было второго тапа
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if lastTappedIndex == index {
                     lastTappedIndex = nil
@@ -240,7 +227,6 @@ struct CategorySection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Заголовок категории
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.secondaryTextApp)
@@ -249,7 +235,6 @@ struct CategorySection: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(NSColor.controlBackgroundColor))
             
-            // Элементы категории
             ForEach(Array(commands.enumerated()), id: \.element.id) { localIndex, command in
                 let globalIndex = startIndex + localIndex
                 CommandRowView(
@@ -272,7 +257,6 @@ struct CommandRowView: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // Показываем реальную иконку приложения или системную иконку
             if let appIcon = command.appIcon {
                 Image(nsImage: appIcon)
                     .resizable()
